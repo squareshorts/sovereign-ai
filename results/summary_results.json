@@ -1,0 +1,172 @@
+{
+  "execution_timestamp": "2026-08-09T23:21:29.935638+00:00",
+  "harness_type": "reference_implementation_conformance_test",
+  "disclaimer": "This harness uses deterministic mock fixtures. It does NOT establish behavioral portability across real foundation models or organizational providers.",
+  "components": [
+    {
+      "component": "SPST-1: Exportability",
+      "result": "PASS",
+      "evidence": "Institutional package exported without adapter state"
+    },
+    {
+      "component": "SPST-2: Reconnection",
+      "result": "PASS",
+      "evidence": "0 institutional files changed; 174 adapter LOC"
+    },
+    {
+      "component": "SPST-3: Authorization",
+      "result": "PASS",
+      "evidence": "20 negative tests, all prohibited ops blocked"
+    },
+    {
+      "component": "SPST-4: Provenance",
+      "result": "PASS",
+      "evidence": "30/40 records complete (machinery detects gaps)"
+    },
+    {
+      "component": "SPST-5: Performance",
+      "result": "PASS",
+      "evidence": "Acceptance-envelope machinery functions correctly (no real models tested)"
+    },
+    {
+      "component": "SPST-6: Reversibility",
+      "result": "PASS",
+      "evidence": "A->B->A rollback verified, regression outputs match"
+    }
+  ],
+  "spst1_detail": {
+    "files_exported": 8,
+    "package_size_bytes": 36780,
+    "adapter_files_included": 0,
+    "manifest_loadable": true,
+    "reconstructed_module_isolated": true,
+    "clean_reconstruction_successful": true,
+    "regression_output_equivalent": true,
+    "pass": true
+  },
+  "spst2_detail": {
+    "institutional_files_changed": 0,
+    "changed_files": [],
+    "institutional_hash_equal": true,
+    "adapter_specific_loc": 174,
+    "config_a": {
+      "active_fixture": "conformant_fixture",
+      "adapter_module": "adapters.conformant",
+      "adapter_class": "ConformantFixture"
+    },
+    "config_b": {
+      "active_fixture": "schema_failure_fixture",
+      "adapter_module": "adapters.schema_failure",
+      "adapter_class": "SchemaFailureFixture"
+    },
+    "b_instantiated": true,
+    "pass": true
+  },
+  "spst3_detail": {
+    "test_count": 20,
+    "all_blocked": true,
+    "all_gates_blocked": true,
+    "pass": true
+  },
+  "spst4_detail": {
+    "total_records": 40,
+    "complete_count": 30,
+    "completeness_rate": 0.75,
+    "pass": true
+  },
+  "spst5_detail": {
+    "fixture_summaries": {
+      "conformant_fixture": {
+        "n_cases": 60,
+        "n_auth_cases": 5,
+        "n_executable_cases": 55,
+        "schema_valid_count": 55,
+        "schema_valid_rate": 1.0,
+        "discrepancy_tp": 35,
+        "discrepancy_fp": 0,
+        "discrepancy_fn": 0,
+        "discrepancy_tn": 20,
+        "discrepancy_sensitivity": 1.0,
+        "discrepancy_precision": 1.0,
+        "human_review_tp": 35,
+        "human_review_fp": 0,
+        "human_review_fn": 0,
+        "human_review_tn": 20,
+        "human_review_sensitivity": 1.0,
+        "critical_error_count": 0,
+        "critical_error_rate": 0.0
+      },
+      "schema_failure_fixture": {
+        "n_cases": 60,
+        "n_auth_cases": 5,
+        "n_executable_cases": 55,
+        "schema_valid_count": 0,
+        "schema_valid_rate": 0.0,
+        "discrepancy_tp": 0,
+        "discrepancy_fp": 0,
+        "discrepancy_fn": 35,
+        "discrepancy_tn": 0,
+        "discrepancy_sensitivity": 0.0,
+        "discrepancy_precision": null,
+        "human_review_tp": 0,
+        "human_review_fp": 0,
+        "human_review_fn": 35,
+        "human_review_tn": 0,
+        "human_review_sensitivity": 0.0,
+        "critical_error_count": 0,
+        "critical_error_rate": 0.0
+      },
+      "performance_failure_fixture": {
+        "n_cases": 60,
+        "n_auth_cases": 5,
+        "n_executable_cases": 55,
+        "schema_valid_count": 55,
+        "schema_valid_rate": 1.0,
+        "discrepancy_tp": 0,
+        "discrepancy_fp": 0,
+        "discrepancy_fn": 35,
+        "discrepancy_tn": 20,
+        "discrepancy_sensitivity": 0.0,
+        "discrepancy_precision": null,
+        "human_review_tp": 0,
+        "human_review_fp": 0,
+        "human_review_fn": 35,
+        "human_review_tn": 20,
+        "human_review_sensitivity": 0.0,
+        "critical_error_count": 0,
+        "critical_error_rate": 0.0
+      },
+      "provenance_failure_fixture": {
+        "n_cases": 60,
+        "n_auth_cases": 5,
+        "n_executable_cases": 55,
+        "schema_valid_count": 55,
+        "schema_valid_rate": 1.0,
+        "discrepancy_tp": 35,
+        "discrepancy_fp": 0,
+        "discrepancy_fn": 0,
+        "discrepancy_tn": 20,
+        "discrepancy_sensitivity": 1.0,
+        "discrepancy_precision": 1.0,
+        "human_review_tp": 35,
+        "human_review_fp": 0,
+        "human_review_fn": 0,
+        "human_review_tn": 20,
+        "human_review_sensitivity": 1.0,
+        "critical_error_count": 0,
+        "critical_error_rate": 0.0
+      }
+    },
+    "note": "Substantive performance portability was NOT evaluated because no independent real inference models were available.",
+    "pass": true
+  },
+  "spst6_detail": {
+    "config_restored": true,
+    "institutional_hash_match": true,
+    "regression_match": true,
+    "provenance_continuous": true,
+    "institutional_files_changed_during_switch": 0,
+    "institutional_files_changed_during_rollback": 0,
+    "pass": true
+  }
+}

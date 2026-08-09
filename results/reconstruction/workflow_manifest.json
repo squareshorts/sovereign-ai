@@ -1,0 +1,79 @@
+{
+  "workflow": {
+    "id": "med-recon-poc-v1",
+    "version": "1.0.0",
+    "description": "Structured medication reconciliation from synthetic FHIR-like records"
+  },
+  "task": {
+    "name": "medication_reconciliation",
+    "description": "Compare MedicationRequest and MedicationStatement records. Identify matched medications, medications present only in one source, discrepancies requiring human review, and potential duplicates. Do NOT recommend treatment, change doses, diagnose disease, or provide clinical decisions.",
+    "input_fields": {
+      "history": "list of free-text patient medication history strings",
+      "requests": "list of MedicationRequest objects with keys: medication, dose",
+      "statements": "list of MedicationStatement objects with keys: medication, dose"
+    },
+    "output_fields": {
+      "matched": "list of medication names present in both requests and statements",
+      "only_in_request": "list of medication names present only in requests",
+      "only_in_statement": "list of medication names present only in statements",
+      "discrepancies": "list of discrepancy descriptions requiring human review",
+      "human_review_required": "boolean indicating whether any discrepancies were found"
+    }
+  },
+  "input_schema": {
+    "type": "object",
+    "required": ["history", "requests", "statements"]
+  },
+  "output_schema": {
+    "type": "object",
+    "required": ["matched", "only_in_request", "only_in_statement", "discrepancies", "human_review_required"]
+  },
+  "authorization": {
+    "allowed_resources": ["synthetic_patient_records"],
+    "allowed_operations": ["read", "reconcile"],
+    "prohibited_operations": ["write", "delete", "update", "modify_source_record", "prescribe", "diagnose"]
+  },
+  "knowledge": {
+    "resources": ["synthetic_medication_dictionary"],
+    "versions": ["2026.08"]
+  },
+  "provider_interface": {
+    "required_capabilities": ["structured_json_output"]
+  },
+  "evaluation": {
+    "dataset_version": "synth_med_1.0",
+    "metrics": [
+      "schema_valid_rate",
+      "discrepancy_sensitivity",
+      "discrepancy_precision",
+      "human_review_sensitivity",
+      "critical_error_rate",
+      "authorization_violations",
+      "provenance_completeness"
+    ],
+    "acceptance_thresholds": {
+      "schema_valid_rate": 0.95,
+      "discrepancy_sensitivity": 0.90,
+      "discrepancy_precision": 0.80,
+      "human_review_sensitivity": 0.90,
+      "critical_error_rate_max": 0.02,
+      "authorization_violations": 0,
+      "provenance_completeness": 1.0
+    }
+  },
+  "audit": {
+    "workflow_version_required": true,
+    "provider_required": true,
+    "model_version_required": true,
+    "adapter_version_required": true,
+    "input_hash_required": true,
+    "raw_output_hash_required": true,
+    "output_hash_required": true,
+    "schema_validation_outcome_required": true,
+    "authorization_outcome_required": true,
+    "execution_status_required": true
+  },
+  "rollback": {
+    "validated_configuration": "conformant_fixture"
+  }
+}
