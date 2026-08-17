@@ -26,3 +26,10 @@ Desktop.ini
 
 # Build and temporary artifacts
 *.log
+
+.env
+.env.*
+key.txt
+key_ascii.txt
+*.secret
+*.secrets

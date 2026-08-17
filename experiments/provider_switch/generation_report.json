@@ -1,0 +1,10 @@
+{
+  "synthea_repository": "synthetichealth/synthea",
+  "synthea_release": "v4.0.0",
+  "synthea_commit_sha": "0185c09ea9d10a822c6f5f3ef9bdcbcbe960c813",
+  "java_version": "17.0.12+7",
+  "seed": 20260817,
+  "exact_generation_command": "C:\\work\\sovereign_ai\\jre\\jdk-17.0.12+7-jre\\bin\\java.exe -jar C:\\work\\sovereign_ai\\synthea.jar -c experiments\\provider_switch\\synthea.properties -p 3000 -s 20260817",
+  "properties_file_sha256": "38b34065ae7a005a4deb34d849d05b7cd8103a8af5085f8d2c4c129c3b93e394",
+  "synthea_jar_sha256": "ed43c20ad40ba5c3bc724503a5af032715fe3c491620b766148e7c2361e6ecc1"
+}

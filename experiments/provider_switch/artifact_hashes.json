@@ -1,0 +1,11 @@
+{
+  "workflow_manifest.json": "1fda69f63eccc8de0d71fc6d3ef82835d805279b55d7f947e107338696d1251b",
+  "workflow/provider_extraction_prompt.txt": "2f9f5027d8ad47f5975b41e5683272f07ebd52c393818c868218c2b455f27330",
+  "workflow/__init__.py": "648d1d4d9aee8e7139dc8f1c424f2119e15e1362e7d50f67febc48f008061600",
+  "workflow/authorization.py": "2a936bbcff0d87eb95aa8fdba3f7379e214e436e81e4f15f8b3bc705769b574c",
+  "workflow/schemas.py": "8800111fea1a302753e555f13274beaa89e054121b9941af893d317783a1a555",
+  "workflow/task.py": "b57c0c3f4783b94c90ead3eff4a15d395476d1ffc52869735112ac419e8965f0",
+  "experiments/provider_switch/benchmark_inputs.jsonl": "c8653f166eba17bbe843a6d046bf0055caf7f1485c7e164fc69e05b66c9a6dec",
+  "experiments/provider_switch/benchmark_ground_truth.jsonl": "d62282442c0850799bc5fd42875944e0bf89143c52162beacb1369f932806c4c",
+  "experiments/provider_switch/analyze_results.py": "70f29a79aa1a6b210db0f32d0d4af8fa394b2722d2df795aa8f3f76113b16fda"
+}

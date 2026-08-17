@@ -1,0 +1,22 @@
+{
+  "synthea_repository": "synthetichealth/synthea",
+  "synthea_version_sha": "0185c09ea9d10a822c6f5f3ef9bdcbcbe960c813",
+  "synthea_java_version": "17.0.12+7",
+  "synthea_seed": 20260817,
+  "status": "FROZEN",
+  "eligible_models": {
+    "OpenAI": ["gpt-3.5-turbo", "gpt-5.4-mini-2026-03-17"],
+    "Anthropic": ["claude-haiku-4-5-20251001"],
+    "Google": ["gemini-3.6-flash"]
+  },
+  "selected_models": {
+    "OpenAI": "gpt-5.4-mini-2026-03-17",
+    "Anthropic": "claude-haiku-4-5-20251001",
+    "Google": "gemini-3.6-flash"
+  },
+  "selection_rationale": {
+    "OpenAI": "gpt-5.4-mini-2026-03-17 selected as latest non-preview cost-efficient general-purpose model.",
+    "Anthropic": "claude-haiku-4-5-20251001 selected as latest non-preview cost-efficient general-purpose model.",
+    "Google": "gemini-3.6-flash selected as stable non-preview cost-efficient general-purpose model."
+  }
+}
