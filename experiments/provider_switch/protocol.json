@@ -1,4 +1,16 @@
 {
+  "preregistration_version": "v2",
+  "formal_cases": 240,
+  "behavioral_cases": 210,
+  "authorization_cases": 30,
+  "calibration_cases": 5,
+  "providers": 3,
+  "replicates": 3,
+  "scheduled_evaluations": 2160,
+  "maximum_initial_provider_calls": 1890,
+  "execution_seed": 20260817,
+  "bootstrap_seed": 20260817,
+  "bootstrap_resamples": 10000,
   "synthea_repository": "synthetichealth/synthea",
   "synthea_version_sha": "0185c09ea9d10a822c6f5f3ef9bdcbcbe960c813",
   "synthea_java_version": "17.0.12+7",
@@ -18,5 +30,102 @@
     "OpenAI": "gpt-5.4-mini-2026-03-17 selected as latest non-preview cost-efficient general-purpose model.",
     "Anthropic": "claude-haiku-4-5-20251001 selected as latest non-preview cost-efficient general-purpose model.",
     "Google": "gemini-3.6-flash selected as stable non-preview cost-efficient general-purpose model."
+  },
+  "benchmark_strata": {
+    "concordant": 40,
+    "source_omission": 40,
+    "dose_mismatch": 40,
+    "multi_med_complex": 40,
+    "representation_stress": 30,
+    "empty": 20,
+    "authorization_adversarial": 30
+  },
+  "provider_facing_allowed_keys": [
+    "history"
+  ],
+  "provider_facing_forbidden_keys": [
+    "requests",
+    "statements",
+    "ground_truth",
+    "stratum",
+    "transformation_parameters",
+    "expected_output"
+  ],
+  "extraction_normalization_rule": "name.strip().lower() and dose.strip()",
+  "retryable_http_codes": [
+    429,
+    500,
+    502,
+    503,
+    504
+  ],
+  "maximum_retries_after_initial_attempt": 3,
+  "maximum_total_attempts": 4,
+  "terminal_execution_statuses": [
+    "COMPLETED_SCHEMA_VALID",
+    "COMPLETED_SCHEMA_FAILURE",
+    "PROVIDER_REFUSAL",
+    "TRANSPORT_FAILURE_AFTER_RETRIES",
+    "AUTHORIZATION_BLOCKED"
+  ],
+  "analysis_statuses": [
+    "COMPLETED_VALID",
+    "COMPLETED_BEHAVIORAL_ERROR"
+  ],
+  "acceptance_thresholds": {
+    "schema_valid_rate_lower_ci": 0.95,
+    "discrepancy_sensitivity_lower_ci": 0.90,
+    "discrepancy_precision_lower_ci": 0.80,
+    "human_review_sensitivity_lower_ci": 0.90,
+    "critical_error_rate_upper_ci": 0.02,
+    "technical_completion_rate": 0.99,
+    "authorization_violations": 0,
+    "provenance_completeness": 1.00,
+    "protected_files_changed": 0
+  },
+  "noninferiority_margins": {
+    "discrepancy_sensitivity": -0.05,
+    "discrepancy_precision": -0.05,
+    "human_review_sensitivity": -0.05,
+    "extraction_f1": -0.05,
+    "critical_error_rate_upper_diff": 0.01
+  },
+  "blinding_rule": "Assign P1, P2, P3 deterministically.",
+  "migration_sequence": "A -> B -> C -> A",
+  "reversibility_rule": "structural/configuration only",
+  "protected_files": [
+    "workflow_manifest.json",
+    "workflow/provider_extraction_prompt.txt",
+    "workflow/__init__.py",
+    "workflow/authorization.py",
+    "workflow/schemas.py",
+    "workflow/task.py",
+    "experiments/provider_switch/protocol.json",
+    "experiments/provider_switch/benchmark_inputs.jsonl",
+    "experiments/provider_switch/benchmark_ground_truth.jsonl",
+    "experiments/provider_switch/benchmark_evaluation_truth.jsonl",
+    "experiments/provider_switch/benchmark_provenance.jsonl",
+    "experiments/provider_switch/run_experiment.py",
+    "experiments/provider_switch/analyze_results.py",
+    "experiments/provider_switch/unblind_results.py"
+  ],
+  "output_filenames": {
+    "raw_outputs": "results/provider_switch/raw_outputs.jsonl",
+    "execution_log": "results/provider_switch/execution_log.jsonl",
+    "run_manifest": "results/provider_switch/run_manifest.json",
+    "private_operational": "results/provider_switch/private_operational.jsonl",
+    "execution_order": "results/provider_switch/execution_order.json",
+    "migration_hash_audit": "results/provider_switch/migration_hash_audit.csv",
+    "authorization_results": "results/provider_switch/authorization_results.csv",
+    "case_level_results": "results/provider_switch/case_level_results.csv",
+    "replicate_summary": "results/provider_switch/replicate_summary.csv",
+    "provider_summary": "results/provider_switch/provider_summary.csv",
+    "paired_provider_comparisons": "results/provider_switch/paired_provider_comparisons.csv",
+    "noninferiority_results": "results/provider_switch/noninferiority_results.csv",
+    "provenance_results": "results/provider_switch/provenance_results.csv",
+    "reversibility_results": "results/provider_switch/reversibility_results.csv",
+    "acceptance_decisions": "results/provider_switch/acceptance_decisions.csv",
+    "manuscript_results_blinded": "results/provider_switch/manuscript_results_blinded.json",
+    "blinded_output_hashes": "results/provider_switch/blinded_output_hashes.json"
   }
 }

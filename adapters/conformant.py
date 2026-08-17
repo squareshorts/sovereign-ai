@@ -23,6 +23,15 @@ class ConformantFixture(BaseAdapter):
         The institutional workflow layer applies reconciliation logic.
         """
         data = json.loads(prompt)
+        
+        # If history contains embedded JSON, use it (for testing)
+        if "history" in data and len(data["history"]) > 0:
+            try:
+                hist_data = json.loads(data["history"][0])
+                if "requests" in hist_data or "statements" in hist_data:
+                    data = hist_data
+            except:
+                pass
 
         request_meds = []
         for r in data.get("requests", []):

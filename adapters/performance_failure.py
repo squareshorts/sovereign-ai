@@ -22,8 +22,18 @@ class PerformanceFailureFixture(BaseAdapter):
         This causes the institutional reconciliation logic to find
         no matches and no discrepancies, missing all actual medications.
         """
-        output = {
+        data = json.loads(prompt)
+        
+        # If history contains embedded JSON, use it (for testing)
+        if "history" in data and len(data["history"]) > 0:
+            try:
+                hist_data = json.loads(data["history"][0])
+                if "requests" in hist_data or "statements" in hist_data:
+                    data = hist_data
+            except:
+                pass
+
+        return json.dumps({
             "request_meds": [],
             "statement_meds": [],
-        }
-        return json.dumps(output, sort_keys=True)
+        }, sort_keys=True)

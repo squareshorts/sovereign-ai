@@ -94,6 +94,7 @@ class ProvenanceRecord:
         self.adapter_version = adapter_version
         self.timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
         self.input_hash: Optional[str] = None
+        self.provider_facing_input_hash: Optional[str] = None
         self.raw_output_hash: Optional[str] = None
         self.output_hash: Optional[str] = None
         self.schema_validation_outcome: Optional[str] = None
@@ -102,6 +103,9 @@ class ProvenanceRecord:
 
     def set_input_hash(self, h: str):
         self.input_hash = h
+        
+    def set_provider_facing_input_hash(self, h: str):
+        self.provider_facing_input_hash = h
 
     def set_raw_output_hash(self, h: str):
         self.raw_output_hash = h
@@ -128,6 +132,7 @@ class ProvenanceRecord:
             "adapter_version": self.adapter_version,
             "timestamp": self.timestamp,
             "input_hash": self.input_hash,
+            "provider_facing_input_hash": self.provider_facing_input_hash,
             "raw_output_hash": self.raw_output_hash,
             "output_hash": self.output_hash,
             "schema_validation_outcome": self.schema_validation_outcome,
@@ -147,6 +152,7 @@ class ProvenanceRecord:
             "adapter_version_required": ("adapter_version", self.adapter_version),
             "timestamp_required": ("timestamp", self.timestamp),
             "input_hash_required": ("input_hash", self.input_hash),
+            "provider_facing_input_hash_required": ("provider_facing_input_hash", self.provider_facing_input_hash),
             "raw_output_hash_required": ("raw_output_hash", self.raw_output_hash),
             "schema_validation_outcome_required": ("schema_validation_outcome", self.schema_validation_outcome),
             "authorization_outcome_required": ("authorization_outcome", self.authorization_outcome),
@@ -243,7 +249,11 @@ class MedicationReconciliationTask:
 
         # 3. Invoke adapter for raw medication extraction
         try:
-            raw_output = self.adapter.infer(serialized_input)
+            provider_payload = {"history": input_data.get("history", [])}
+            serialized_provider_payload = json.dumps(provider_payload)
+            prov.set_provider_facing_input_hash(hash_data(provider_payload))
+            
+            raw_output = self.adapter.infer(serialized_provider_payload)
             prov.set_raw_output_hash(hash_data(raw_output))
         except Exception as e:
             prov.set_authorization_outcome("adapter_error")

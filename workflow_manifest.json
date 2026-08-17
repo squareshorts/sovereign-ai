@@ -67,6 +67,7 @@
     "model_version_required": true,
     "adapter_version_required": true,
     "input_hash_required": true,
+    "provider_facing_input_hash_required": true,
     "raw_output_hash_required": true,
     "output_hash_required": true,
     "schema_validation_outcome_required": true,

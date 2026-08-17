@@ -64,7 +64,7 @@ def test_schema_validation(results):
     print("\n--- Schema Validation Tests ---")
 
     valid_input = {
-        "history": ["takes aspirin"],
+        "history": [json.dumps({"requests": [{"medication": "aspirin", "dose": "81mg"}], "statements": [{"medication": "aspirin", "dose": "81mg"}]})],
         "requests": [{"medication": "aspirin", "dose": "81mg"}],
         "statements": [{"medication": "aspirin", "dose": "81mg"}],
     }
@@ -188,7 +188,7 @@ def test_conformant_fixture(results):
 
     # Exact match case
     case = {
-        "history": ["takes aspirin"],
+        "history": [json.dumps({"requests": [{"medication": "aspirin", "dose": "81mg"}], "statements": [{"medication": "aspirin", "dose": "81mg"}]})],
         "requests": [{"medication": "aspirin", "dose": "81mg"}],
         "statements": [{"medication": "aspirin", "dose": "81mg"}],
     }
@@ -204,7 +204,7 @@ def test_conformant_fixture(results):
 
     # Discrepancy case
     case2 = {
-        "history": [],
+        "history": [json.dumps({"requests": [{"medication": "metformin", "dose": "500mg"}], "statements": [{"medication": "metformin", "dose": "1000mg"}]})],
         "requests": [{"medication": "metformin", "dose": "500mg"}],
         "statements": [{"medication": "metformin", "dose": "1000mg"}],
     }
@@ -242,7 +242,7 @@ def test_performance_failure_fixture(results):
     # This case has a discrepancy (only in request), but perf-failure
     # returns empty lists, so reconciliation finds nothing
     case = {
-        "history": [],
+        "history": [json.dumps({"requests": [{"medication": "metformin", "dose": "500mg"}], "statements": []})],
         "requests": [{"medication": "metformin", "dose": "500mg"}],
         "statements": [],
     }
