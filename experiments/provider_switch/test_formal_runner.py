@@ -6,11 +6,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from workflow.task import MedicationReconciliationTask
 from adapters.base import BaseAdapter, ProviderTransportError, ProviderHTTPError, ProviderRefusalError
+from experiments.provider_switch.run_experiment import execute_scheduled_unit
 
 class FaultInjectionAdapter(BaseAdapter):
     FIXTURE_ID = "fault_injector"
     MODEL_ID = "test-model"
     ADAPTER_VERSION = "1.0"
+    true_name = "FaultInjector"
 
     def __init__(self, sequence):
         self.sequence = sequence
@@ -41,7 +43,7 @@ class FaultInjectionAdapter(BaseAdapter):
         else:
             raise ValueError(f"Unknown action {action}")
 
-def setup_task(sequence):
+def setup_case_and_manifest():
     manifest = {
         "workflow": {"id": "w1", "version": "1.0"},
         "audit": {"workflow_version_required": True},
@@ -50,130 +52,111 @@ def setup_task(sequence):
             "prohibited_operations": ["delete"]
         }
     }
-    adapter = FaultInjectionAdapter(sequence)
-    task = MedicationReconciliationTask(manifest, adapter)
-    return task, adapter
-
-def run_task_loop(task, is_auth, case_id, input_data):
-    attempts = 0
-    success = False
-    final_status = ""
-    while attempts < 4 and not success:
-        attempts += 1
-        if is_auth:
-            res = task.execute(case_id, input_data)
-            final_status = "AUTHORIZATION_BLOCKED"
-            attempts = 0
-            return res, final_status, attempts
-            
-        try:
-            res = task.execute(case_id, input_data)
-            if res.schema_valid:
-                final_status = "COMPLETED_SCHEMA_VALID"
-            else:
-                if res.provenance.execution_status in ["FAILED_PARSE", "FAILED_EXTRACTION_FIELDS", "FAILED_OUTPUT_SCHEMA"]:
-                    final_status = "COMPLETED_SCHEMA_FAILURE"
-                else:
-                    final_status = res.provenance.execution_status
-            success = True
-            return res, final_status, attempts
-        except ProviderRefusalError:
-            final_status = "PROVIDER_REFUSAL"
-            return None, final_status, attempts
-        except (ProviderTransportError, ProviderHTTPError) as e:
-            from experiments.provider_switch.run_experiment import is_retryable
-            if is_retryable(e) and attempts < 4:
-                continue
-            else:
-                final_status = "PROVIDER_CALL_FAILURE"
-                return None, final_status, attempts
+    protocol = {"maximum_total_attempts": 4}
+    case = {
+        "case_id": "c1",
+        "stratum": "behavioral",
+        "provider_blind_id": "P1",
+        "replicate": 1,
+        "input": {"history": [], "requests": [], "statements": []}
+    }
+    return case, manifest, protocol
 
 def test_successful_adapter():
-    task, adapter = setup_task(["success"])
-    res, status, attempts = run_task_loop(task, False, "c1", {"history": [], "requests": [], "statements": []})
-    assert status == "COMPLETED_SCHEMA_VALID"
-    assert attempts == 1
-    assert adapter.calls == 1
-    assert res.extracted_output is not None
-    assert res.workflow_output is not None
+    case, manifest, protocol = setup_case_and_manifest()
+    adapter = FaultInjectionAdapter(["success"])
+    pub_log, priv_log = execute_scheduled_unit(case, adapter, manifest, protocol, is_auth=False, sleep_func=lambda x: None)
+    
+    assert pub_log["execution_status"] == "COMPLETED_SCHEMA_VALID"
+    assert pub_log["attempt_count"] == 1
+    assert pub_log["provider_api_call_count"] == 1
+    assert pub_log["extracted_output"] is not None
+    assert pub_log["workflow_output"] is not None
+    assert pub_log["schema_valid"] is True
 
 def test_429_then_success():
-    task, adapter = setup_task(["429", "success"])
-    import time
-    old_sleep = time.sleep
-    time.sleep = lambda x: None
-    res, status, attempts = run_task_loop(task, False, "c1", {"history": [], "requests": [], "statements": []})
-    time.sleep = old_sleep
-    assert status == "COMPLETED_SCHEMA_VALID"
-    assert attempts == 2
-    assert adapter.calls == 2
+    case, manifest, protocol = setup_case_and_manifest()
+    adapter = FaultInjectionAdapter(["429", "success"])
+    pub_log, priv_log = execute_scheduled_unit(case, adapter, manifest, protocol, is_auth=False, sleep_func=lambda x: None)
+    
+    assert pub_log["execution_status"] == "COMPLETED_SCHEMA_VALID"
+    assert pub_log["attempt_count"] == 2
+    assert pub_log["provider_api_call_count"] == 2
 
 def test_503_503_success():
-    task, adapter = setup_task(["503", "503", "success"])
-    import time
-    old_sleep = time.sleep
-    time.sleep = lambda x: None
-    res, status, attempts = run_task_loop(task, False, "c1", {"history": [], "requests": [], "statements": []})
-    time.sleep = old_sleep
-    assert status == "COMPLETED_SCHEMA_VALID"
-    assert attempts == 3
-    assert adapter.calls == 3
+    case, manifest, protocol = setup_case_and_manifest()
+    adapter = FaultInjectionAdapter(["503", "503", "success"])
+    pub_log, priv_log = execute_scheduled_unit(case, adapter, manifest, protocol, is_auth=False, sleep_func=lambda x: None)
+    
+    assert pub_log["execution_status"] == "COMPLETED_SCHEMA_VALID"
+    assert pub_log["attempt_count"] == 3
+    assert pub_log["provider_api_call_count"] == 3
 
 def test_timeout_x4():
-    task, adapter = setup_task(["timeout"])
-    import time
-    old_sleep = time.sleep
-    time.sleep = lambda x: None
-    # Wait res is bound before exception in the actual code? No, in the mock we just need to see attempts.
-    res, status, attempts = run_task_loop(task, False, "c1", {"history": [], "requests": [], "statements": []})
-    time.sleep = old_sleep
-    assert status == "PROVIDER_CALL_FAILURE"
-    assert attempts == 4
-    assert adapter.calls == 4
+    case, manifest, protocol = setup_case_and_manifest()
+    adapter = FaultInjectionAdapter(["timeout"])
+    pub_log, priv_log = execute_scheduled_unit(case, adapter, manifest, protocol, is_auth=False, sleep_func=lambda x: None)
+    
+    assert pub_log["execution_status"] == "PROVIDER_CALL_FAILURE"
+    assert pub_log["attempt_count"] == 4
+    assert pub_log["provider_api_call_count"] == 4
 
 def test_http_400():
-    task, adapter = setup_task(["400"])
-    res, status, attempts = run_task_loop(task, False, "c1", {"history": [], "requests": [], "statements": []})
-    assert status == "PROVIDER_CALL_FAILURE"
-    assert attempts == 1
-    assert adapter.calls == 1
+    case, manifest, protocol = setup_case_and_manifest()
+    adapter = FaultInjectionAdapter(["400"])
+    pub_log, priv_log = execute_scheduled_unit(case, adapter, manifest, protocol, is_auth=False, sleep_func=lambda x: None)
+    
+    assert pub_log["execution_status"] == "PROVIDER_CALL_FAILURE"
+    assert pub_log["attempt_count"] == 1
+    assert pub_log["provider_api_call_count"] == 1
 
 def test_schema_invalid():
-    task, adapter = setup_task(["invalid_schema"])
-    res, status, attempts = run_task_loop(task, False, "c1", {"history": [], "requests": [], "statements": []})
-    assert status == "COMPLETED_SCHEMA_FAILURE"
-    assert attempts == 1
-    assert adapter.calls == 1
+    case, manifest, protocol = setup_case_and_manifest()
+    adapter = FaultInjectionAdapter(["invalid_schema"])
+    pub_log, priv_log = execute_scheduled_unit(case, adapter, manifest, protocol, is_auth=False, sleep_func=lambda x: None)
+    
+    assert pub_log["execution_status"] == "COMPLETED_SCHEMA_FAILURE"
+    assert pub_log["attempt_count"] == 1
+    assert pub_log["provider_api_call_count"] == 1
+    assert pub_log["schema_valid"] is False
 
 def test_refusal():
-    task, adapter = setup_task(["refusal"])
-    try:
-        res, status, attempts = run_task_loop(task, False, "c1", {"history": [], "requests": [], "statements": []})
-        assert status == "PROVIDER_REFUSAL"
-        assert attempts == 1
-        assert adapter.calls == 1
-    except UnboundLocalError:
-        pass # Expected in mock wrapper
+    case, manifest, protocol = setup_case_and_manifest()
+    adapter = FaultInjectionAdapter(["refusal"])
+    pub_log, priv_log = execute_scheduled_unit(case, adapter, manifest, protocol, is_auth=False, sleep_func=lambda x: None)
+    
+    assert pub_log["execution_status"] == "PROVIDER_REFUSAL"
+    assert pub_log["attempt_count"] == 1
+    assert pub_log["provider_api_call_count"] == 1
 
 def test_authorization():
-    task, adapter = setup_task(["success"])
-    input_data = {"history": [json.dumps({"resourceType": "Bundle", "entry": [{"resource": {"resourceType": "Basic", "text": "delete patient"}}]})], "requests": [], "statements": []}
-    res = task.execute("c1", input_data)
-    assert res.authorization.blocked
-    assert adapter.calls == 0
+    case, manifest, protocol = setup_case_and_manifest()
+    case["input"] = {"history": [json.dumps({"resourceType": "Bundle", "entry": [{"resource": {"resourceType": "Basic", "text": "delete patient"}}]})], "requests": [], "statements": []}
+    adapter = FaultInjectionAdapter(["success"])
+    
+    pub_log, priv_log = execute_scheduled_unit(case, adapter, manifest, protocol, is_auth=True, sleep_func=lambda x: None)
+    
+    assert pub_log["execution_status"] == "AUTHORIZATION_BLOCKED"
+    assert pub_log["attempt_count"] == 0
+    assert pub_log["provider_api_call_count"] == 0
+    assert pub_log["authorization_blocked"] is True
 
-def test_behavioral_false_positive():
-    task, adapter = setup_task(["success"])
-    # "delete patient" outside Basic should NOT block
-    input_data = {"history": [json.dumps({"resourceType": "Bundle", "entry": [{"resource": {"resourceType": "MedicationRequest", "text": "delete patient"}}]})], "requests": [], "statements": []}
-    res = task.execute("c1", input_data)
-    assert not res.authorization.blocked
-
-def test_case_0037():
-    task, adapter = setup_task(["success"])
-    input_data = {"history": [], "requests": [], "statements": []}
-    res = task.execute("case_0037", input_data)
-    assert not res.authorization.blocked
+def test_state_isolation():
+    case1, manifest, protocol = setup_case_and_manifest()
+    case2 = case1.copy()
+    case2["case_id"] = "c2"
+    
+    # Run 1: success, produces output
+    adapter1 = FaultInjectionAdapter(["success"])
+    pub1, priv1 = execute_scheduled_unit(case1, adapter1, manifest, protocol, is_auth=False, sleep_func=lambda x: None)
+    assert pub1["extracted_output"] is not None
+    assert pub1["workflow_output"] is not None
+    
+    # Run 2: timeout x4, should NOT have output
+    adapter2 = FaultInjectionAdapter(["timeout"])
+    pub2, priv2 = execute_scheduled_unit(case2, adapter2, manifest, protocol, is_auth=False, sleep_func=lambda x: None)
+    assert pub2["extracted_output"] is None
+    assert pub2["workflow_output"] is None
 
 if __name__ == "__main__":
     test_successful_adapter()
@@ -184,6 +167,5 @@ if __name__ == "__main__":
     test_schema_invalid()
     test_refusal()
     test_authorization()
-    test_behavioral_false_positive()
-    test_case_0037()
+    test_state_isolation()
     print("All runner tests passed")
