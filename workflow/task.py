@@ -14,9 +14,19 @@ import json
 import hashlib
 import datetime
 from typing import Dict, Any, Optional, Tuple, List
+from dataclasses import dataclass
 
 from .schemas import validate_input, validate_output
 from .authorization import AuthorizationEngine, AuthorizationResult
+
+@dataclass
+class TaskExecutionResult:
+    extracted_output: Optional[Dict[str, Any]]
+    workflow_output: Optional[Dict[str, Any]]
+    provenance: "ProvenanceRecord"
+    authorization: AuthorizationResult
+    schema_valid: bool
+    schema_errors: List[str]
 
 
 def hash_data(data: Any) -> str:
@@ -199,17 +209,11 @@ class MedicationReconciliationTask:
         self.auth_engine = AuthorizationEngine(manifest)
 
     def execute(self, case_id: str,
-                input_data: Dict[str, Any]) -> Tuple[
-                    Optional[Dict[str, Any]],
-                    ProvenanceRecord,
-                    AuthorizationResult,
-                    bool,
-                    List[str]]:
+                input_data: Dict[str, Any]) -> TaskExecutionResult:
         """Execute the reconciliation workflow for a single case.
 
         Returns:
-            (output_data_or_None, provenance, auth_result,
-             schema_valid, schema_errors)
+            TaskExecutionResult
         """
         prov = ProvenanceRecord(
             case_id=case_id,
@@ -233,7 +237,7 @@ class MedicationReconciliationTask:
                 attempted=False, blocked=False, executed=False,
                 details="Skipped: invalid input"
             )
-            return None, prov, auth_result, False, input_errors
+            return TaskExecutionResult(None, None, prov, auth_result, False, input_errors)
 
         # 2. Enforce authorization (EXTERNAL to inference)
         serialized_input = json.dumps(input_data)
@@ -243,22 +247,18 @@ class MedicationReconciliationTask:
         if auth_result.blocked:
             prov.set_authorization_outcome("blocked")
             prov.set_execution_status("BLOCKED_AUTHORIZATION")
-            return None, prov, auth_result, True, []
+            return TaskExecutionResult(None, None, prov, auth_result, True, [])
 
         prov.set_authorization_outcome("permitted")
 
         # 3. Invoke adapter for raw medication extraction
-        try:
-            provider_payload = {"history": input_data.get("history", [])}
-            serialized_provider_payload = json.dumps(provider_payload)
-            prov.set_provider_facing_input_hash(hash_data(provider_payload))
-            
-            raw_output = self.adapter.infer(serialized_provider_payload)
-            prov.set_raw_output_hash(hash_data(raw_output))
-        except Exception as e:
-            prov.set_authorization_outcome("adapter_error")
-            prov.set_execution_status("FAILED_ADAPTER_ERROR")
-            return None, prov, auth_result, True, [f"Adapter error: {e}"]
+        provider_payload = {"history": input_data.get("history", [])}
+        serialized_provider_payload = json.dumps(provider_payload)
+        prov.set_provider_facing_input_hash(hash_data(provider_payload))
+        
+        # Exceptions (transport, provider) propagate to runner.
+        raw_output = self.adapter.infer(serialized_provider_payload)
+        prov.set_raw_output_hash(hash_data(raw_output))
 
         # 4. Parse adapter extraction output
         try:
@@ -269,12 +269,12 @@ class MedicationReconciliationTask:
             else:
                 prov.set_schema_validation_outcome("FAIL")
                 prov.set_execution_status("FAILED_PARSE")
-                return (None, prov, auth_result, False,
+                return TaskExecutionResult(None, None, prov, auth_result, False,
                         ["Adapter returned non-JSON, non-dict output"])
         except json.JSONDecodeError as e:
             prov.set_schema_validation_outcome("FAIL")
             prov.set_execution_status("FAILED_PARSE")
-            return (None, prov, auth_result, False,
+            return TaskExecutionResult(None, None, prov, auth_result, False,
                     [f"Adapter output is not valid JSON: {e}"])
 
         # 5. Apply institution-defined reconciliation logic
@@ -290,7 +290,7 @@ class MedicationReconciliationTask:
         else:
             prov.set_schema_validation_outcome("FAIL")
             prov.set_execution_status("FAILED_EXTRACTION_FIELDS")
-            return (None, prov, auth_result, False,
+            return TaskExecutionResult(extracted, None, prov, auth_result, False,
                     ["Adapter output missing required extraction fields"])
 
         # 6. Validate final output schema
@@ -298,7 +298,7 @@ class MedicationReconciliationTask:
         if not output_valid:
             prov.set_schema_validation_outcome("FAIL")
             prov.set_execution_status("FAILED_OUTPUT_SCHEMA")
-            return None, prov, auth_result, False, output_errors
+            return TaskExecutionResult(extracted, None, prov, auth_result, False, output_errors)
 
         # 7. Hash output and finalize provenance
         output_hash = hash_data(output_data)
@@ -306,4 +306,4 @@ class MedicationReconciliationTask:
         prov.set_schema_validation_outcome("PASS")
         prov.set_execution_status("COMPLETED")
 
-        return output_data, prov, auth_result, True, []
+        return TaskExecutionResult(extracted, output_data, prov, auth_result, True, [])

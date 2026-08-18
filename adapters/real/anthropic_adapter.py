@@ -2,8 +2,7 @@ import os
 import json
 import urllib.request
 import urllib.error
-from adapters.base import BaseAdapter
-
+from adapters.base import BaseAdapter, ProviderHTTPError, ProviderTransportError
 class AnthropicAdapter(BaseAdapter):
     FIXTURE_ID = "anthropic_real"
     ADAPTER_VERSION = "1.0.0"
@@ -92,6 +91,6 @@ class AnthropicAdapter(BaseAdapter):
                 raise RuntimeError("Anthropic model did not use the forced structured extraction tool.")
 
         except urllib.error.HTTPError as e:
-            raise RuntimeError(f"Anthropic API Error: {e.code} {e.read().decode('utf-8')}")
+            raise ProviderHTTPError(e.code, e.read().decode('utf-8'))
         except Exception as e:
-            raise RuntimeError(f"Anthropic Transport Error: {str(e)}")
+            raise ProviderTransportError(str(e))

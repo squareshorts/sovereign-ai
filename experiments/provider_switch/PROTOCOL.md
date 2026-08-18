@@ -1,8 +1,12 @@
-# SPST Preregistration Protocol v2
+# SPST Preregistration (v3)
+
+**Status:** FROZEN
+**Version:** v3
 
 ## Version History
 - **v1**: Audit record of first preregistration attempt. Tag preserved permanently.
-- **v2 (Current)**: Executable formal experiment preregistration containing full runner, blinded analysis, corrected provider boundaries, and authorization-adversarial corrections.
+- **v2**: Audit record of aborted technical run. Tag preserved permanently.
+- **v3 (Current)**: Corrected provider execution boundaries.
 
 ## Provider Boundary Leakage Correction
 - The institutional workflow naturally contains `requests` and `statements` arrays from the generated FHIR records, as well as strata and ground-truth metadata.
@@ -42,7 +46,7 @@
   - `COMPLETED_SCHEMA_VALID`
   - `COMPLETED_SCHEMA_FAILURE`
   - `PROVIDER_REFUSAL`
-  - `TRANSPORT_FAILURE_AFTER_RETRIES`
+  - `PROVIDER_CALL_FAILURE`
   - `AUTHORIZATION_BLOCKED`
 
 ## Analysis and Acceptance

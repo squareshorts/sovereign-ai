@@ -2,15 +2,17 @@
   "workflow_manifest.json": "fb719dd1660e4246d7d2f5c0971c150b7989b36da4d8b11b97bfed2522f975ec",
   "workflow/provider_extraction_prompt.txt": "6aa71def2d508eae421e6d240c2ed14bb82b232470cebba55aed95bdbbcd9f18",
   "workflow/__init__.py": "648d1d4d9aee8e7139dc8f1c424f2119e15e1362e7d50f67febc48f008061600",
-  "workflow/authorization.py": "2a936bbcff0d87eb95aa8fdba3f7379e214e436e81e4f15f8b3bc705769b574c",
+  "workflow/authorization.py": "34e967c1cb7237afea815b6f79fe46a5eae1c626628a0f5990bf8e3e95887d69",
   "workflow/schemas.py": "8800111fea1a302753e555f13274beaa89e054121b9941af893d317783a1a555",
-  "workflow/task.py": "2ceaa017e6c0dae180de02e36c70625aaa5aa29453dc8439b9d1e48ec1db4327",
-  "experiments/provider_switch/protocol.json": "7de467f1bfc8a6c33520758813205a3de61c8242ce9de6a9b5f61a85b1722768",
+  "workflow/task.py": "bdae6d41631e076e39064544f604f2cf1fef3abbc4f97a1041bb95ca56276217",
+  "experiments/provider_switch/protocol.json": "d0d9ffecbcd3cb074fb110ff9def41dde4cd3e2e96cb6305ce556f46a4ce3cba",
+  "experiments/provider_switch/PROTOCOL.md": "f7c060e1efce23209cc35067033792d11be79f93da1f33775705558c2d7ff4c1",
   "experiments/provider_switch/benchmark_inputs.jsonl": "50cabfe90e440dadc5dd76a3da11ad92b7c7ae57f0db5d37c3d6b338e948afc3",
   "experiments/provider_switch/benchmark_ground_truth.jsonl": "d62282442c0850799bc5fd42875944e0bf89143c52162beacb1369f932806c4c",
   "experiments/provider_switch/benchmark_evaluation_truth.jsonl": "642a75c3be6593ad0341744e7d12579ecae4259c5d17fa0a6ff5f971351bfd9a",
   "experiments/provider_switch/benchmark_provenance.jsonl": "bc1a79fc74b9fae6af468ff92063d140f1eb6b250bbcda2d64e2fdc67954e256",
-  "experiments/provider_switch/run_experiment.py": "5844eb17670377745d2627fd49a241e7e810c7d7b5d8a28e651da811f91ed492",
-  "experiments/provider_switch/analyze_results.py": "31d6a99e76a2422f88cc237a8fc0d399cbd275bd728a12c6d2b6814083b5d419",
-  "experiments/provider_switch/unblind_results.py": "4b996f70245f4bcb45b790def10d8ebd14f58c24ef973ad71f968bc536a45f7f"
+  "experiments/provider_switch/run_experiment.py": "9d46a38e7fadfb391be133f112b0d944f55107aaefccd5bb5beac086153045fe",
+  "experiments/provider_switch/analyze_results.py": "171208cafcca6cf3cb53636ed63dea3372cea40cabc36994afc67771c001ea63",
+  "experiments/provider_switch/unblind_results.py": "4b996f70245f4bcb45b790def10d8ebd14f58c24ef973ad71f968bc536a45f7f",
+  "experiments/provider_switch/provider_mapping_v3_commitment.json": "54190f84b4983e730cb665b65b058428440e6ffb915d91149cc6029a5b3ae3c2"
 }

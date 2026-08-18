@@ -2,8 +2,7 @@ import os
 import json
 import urllib.request
 import urllib.error
-from adapters.base import BaseAdapter
-
+from adapters.base import BaseAdapter, ProviderHTTPError, ProviderTransportError
 class OpenAIAdapter(BaseAdapter):
     FIXTURE_ID = "openai_real"
     ADAPTER_VERSION = "1.0.0"
@@ -92,7 +91,6 @@ class OpenAIAdapter(BaseAdapter):
                     self.MODEL_ID = resp_json["model"]
                 return resp_json["choices"][0]["message"]["content"]
         except urllib.error.HTTPError as e:
-            # Re-raise to trigger exponential backoff in the orchestrator
-            raise RuntimeError(f"OpenAI API Error: {e.code} {e.read().decode('utf-8')}")
+            raise ProviderHTTPError(e.code, e.read().decode('utf-8'))
         except Exception as e:
-            raise RuntimeError(f"OpenAI Transport Error: {str(e)}")
+            raise ProviderTransportError(str(e))

@@ -2,8 +2,7 @@ import os
 import json
 import urllib.request
 import urllib.error
-from adapters.base import BaseAdapter
-
+from adapters.base import BaseAdapter, ProviderHTTPError, ProviderTransportError
 class GoogleAdapter(BaseAdapter):
     FIXTURE_ID = "google_real"
     ADAPTER_VERSION = "1.0.0"
@@ -68,41 +67,32 @@ class GoogleAdapter(BaseAdapter):
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_id}:generateContent?key={self.api_key}"
 
-        import time
-        max_retries = 3
-        for attempt in range(max_retries + 1):
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={
-                    "Content-Type": "application/json"
-                },
-                method="POST"
-            )
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json"
+            },
+            method="POST"
+        )
 
-            try:
-                with urllib.request.urlopen(req, timeout=60) as response:
-                    resp_body = response.read().decode("utf-8")
-                    resp_json = json.loads(resp_body)
-                    
-                    if "modelVersion" in resp_json:
-                        self.MODEL_ID = resp_json["modelVersion"]
+        try:
+            with urllib.request.urlopen(req, timeout=60) as response:
+                resp_body = response.read().decode("utf-8")
+                resp_json = json.loads(resp_body)
+                
+                if "modelVersion" in resp_json:
+                    self.MODEL_ID = resp_json["modelVersion"]
 
-                    try:
-                        text_content = resp_json["candidates"][0]["content"]["parts"][0]["text"]
-                        return text_content
-                    except (KeyError, IndexError) as e:
-                        raise RuntimeError(f"Malformed response from Gemini: {resp_json}")
-                    
-            except urllib.error.HTTPError as e:
-                if attempt < max_retries and e.code in (429, 500, 502, 503, 504):
-                    time.sleep(2 ** attempt)
-                    continue
-                raise RuntimeError(f"Gemini API Error: {e.code} {e.read().decode('utf-8')}")
-            except urllib.error.URLError as e:
-                if attempt < max_retries and ("timed out" in str(e.reason).lower() or isinstance(e.reason, (TimeoutError, OSError))):
-                    time.sleep(2 ** attempt)
-                    continue
-                raise RuntimeError(f"Gemini Transport Error: {str(e)}")
-            except Exception as e:
-                raise RuntimeError(f"Gemini Transport Error: {str(e)}")
+                try:
+                    text_content = resp_json["candidates"][0]["content"]["parts"][0]["text"]
+                    return text_content
+                except (KeyError, IndexError) as e:
+                    raise ProviderResponseError(f"Malformed response from Gemini: {resp_json}")
+                
+        except urllib.error.HTTPError as e:
+            raise ProviderHTTPError(e.code, e.read().decode('utf-8'))
+        except urllib.error.URLError as e:
+            raise ProviderTransportError(str(e))
+        except Exception as e:
+            raise ProviderTransportError(str(e))

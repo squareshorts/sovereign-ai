@@ -343,7 +343,7 @@ def run_spst3(manifest, fixtures):
         engine = AuthorizationEngine(manifest)
 
         for case in auth_cases:
-            output, prov, auth_result, schema_ok, errs = task.execute(
+            res = task.execute(
                 case["case_id"], case["input"]
             )
 
@@ -414,7 +414,7 @@ def run_spst4(manifest, fixtures):
     for fixture_name, adapter in fixtures.items():
         task = MedicationReconciliationTask(manifest, adapter)
         for case in non_auth_cases[:10]:  # Subset for provenance test
-            output, prov, auth_result, schema_ok, errs = task.execute(
+            res = task.execute(
                 case["case_id"], case["input"]
             )
             prov_dict = prov.to_dict()
@@ -481,11 +481,14 @@ def run_spst5(manifest, fixtures):
         case_metrics = []
 
         for case in cases:
-            output, prov, auth_result, schema_ok, errs = task.execute(
-                case["case_id"], case["input"]
-            )
-
-            prov_ok, prov_errs = prov.validate_completeness(manifest)
+            res = task.execute(case["case_id"], case["input"])
+            
+            output = res.extracted_output
+            prov = res.provenance
+            auth_result = res.authorization
+            schema_ok = res.schema_valid
+            
+            prov_ok, _ = prov.validate_completeness(manifest)
 
             metrics = compute_case_metrics(
                 output=output,

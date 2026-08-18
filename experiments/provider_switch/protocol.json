@@ -1,5 +1,5 @@
 {
-  "preregistration_version": "v2",
+  "preregistration_version": "v3",
   "formal_cases": 240,
   "behavioral_cases": 210,
   "authorization_cases": 30,
@@ -65,7 +65,7 @@
     "COMPLETED_SCHEMA_VALID",
     "COMPLETED_SCHEMA_FAILURE",
     "PROVIDER_REFUSAL",
-    "TRANSPORT_FAILURE_AFTER_RETRIES",
+    "PROVIDER_CALL_FAILURE",
     "AUTHORIZATION_BLOCKED"
   ],
   "analysis_statuses": [
@@ -101,13 +101,15 @@
     "workflow/schemas.py",
     "workflow/task.py",
     "experiments/provider_switch/protocol.json",
+    "experiments/provider_switch/PROTOCOL.md",
     "experiments/provider_switch/benchmark_inputs.jsonl",
     "experiments/provider_switch/benchmark_ground_truth.jsonl",
     "experiments/provider_switch/benchmark_evaluation_truth.jsonl",
     "experiments/provider_switch/benchmark_provenance.jsonl",
     "experiments/provider_switch/run_experiment.py",
     "experiments/provider_switch/analyze_results.py",
-    "experiments/provider_switch/unblind_results.py"
+    "experiments/provider_switch/unblind_results.py",
+    "experiments/provider_switch/provider_mapping_v3_commitment.json"
   ],
   "output_filenames": {
     "raw_outputs": "results/provider_switch/raw_outputs.jsonl",

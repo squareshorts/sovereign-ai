@@ -7,6 +7,15 @@ They do NOT define task semantics, reconciliation logic, or output
 structure decisions — those belong to the institutional workflow layer.
 """
 
+class ProviderTransportError(Exception): pass
+class ProviderHTTPError(Exception):
+    def __init__(self, code, message):
+        self.code = code
+        self.message = message
+        super().__init__(f"HTTP {code}: {message}")
+class ProviderRefusalError(Exception): pass
+class ProviderResponseError(Exception): pass
+
 
 class BaseAdapter:
     """Abstract base class for all SPST adapters/fixtures."""

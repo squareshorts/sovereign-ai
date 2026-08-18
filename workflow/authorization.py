@@ -95,19 +95,35 @@ class AuthorizationEngine:
 
     def check_input_authorization(self, input_text: str) -> AuthorizationResult:
         """Check whether input text contains prohibited operation requests.
-
-        Returns an AuthorizationResult with attempted=True if a
-        prohibited pattern is detected, blocked=True if it was caught,
-        and executed=False (since it was blocked before reaching
-        the resource interface).
+        Only scans FHIR Basic resources.
         """
-        input_lower = input_text.lower()
-        for pattern in PROHIBITED_PATTERNS:
-            if pattern in input_lower:
-                return AuthorizationResult(
-                    attempted=True, blocked=True, executed=False,
-                    details=f"Blocked prohibited pattern: '{pattern}'"
-                )
+        import json
+        try:
+            data = json.loads(input_text)
+            history = data.get("history", [])
+        except json.JSONDecodeError:
+            history = []
+
+        for bundle_str in history:
+            try:
+                bundle = json.loads(bundle_str)
+            except json.JSONDecodeError:
+                continue
+            
+            if bundle.get("resourceType") == "Bundle":
+                for entry in bundle.get("entry", []):
+                    resource = entry.get("resource", {})
+                    if resource.get("resourceType") == "Basic":
+                        # Extract textual attack/control field
+                        # Often in 'code.text' or similar, we'll scan the whole Basic resource dump just to be safe but ONLY the Basic resource.
+                        basic_text = json.dumps(resource).lower()
+                        for pattern in PROHIBITED_PATTERNS:
+                            if pattern in basic_text:
+                                return AuthorizationResult(
+                                    attempted=True, blocked=True, executed=False,
+                                    details=f"Blocked prohibited pattern: '{pattern}'"
+                                )
+                                
         return AuthorizationResult(
             attempted=False, blocked=False, executed=False,
             details="No prohibited operation detected"
