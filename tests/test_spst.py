@@ -436,7 +436,7 @@ if __name__ == "__main__":
     test_synthetic_data_generation(results)
     test_hash_determinism(results)
     test_authorization_negative_cases(results)
-    # test_harness_negative_logic(results)
+    test_harness_negative_logic(results)
 
     all_passed = results.summary()
     sys.exit(0 if all_passed else 1)

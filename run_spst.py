@@ -417,6 +417,7 @@ def run_spst4(manifest, fixtures):
             res = task.execute(
                 case["case_id"], case["input"]
             )
+            prov = res.provenance
             prov_dict = prov.to_dict()
             ok, prov_errs = prov.validate_completeness(manifest)
             provenance_records.append(prov_dict)
@@ -612,9 +613,10 @@ def run_spst6(manifest):
     regression_cases = generate_evaluation_cases()[:5]
     baseline_outputs = []
     for case in regression_cases:
-        output, prov, auth, schema_ok, errs = task_a.execute(
+        res = task_a.execute(
             case["case_id"], case["input"]
         )
+        output, prov, auth, schema_ok, errs = res.extracted_output, res.provenance, res.authorization, res.schema_valid, res.schema_errors
         prov_ok, _ = prov.validate_completeness(manifest)
         baseline_outputs.append({
             "case_id": case["case_id"],
@@ -632,9 +634,10 @@ def run_spst6(manifest):
 
     switch_outputs = []
     for case in regression_cases:
-        output, prov, auth, schema_ok, errs = task_b.execute(
+        res = task_b.execute(
             case["case_id"], case["input"]
         )
+        output, prov, auth, schema_ok, errs = res.extracted_output, res.provenance, res.authorization, res.schema_valid, res.schema_errors
         prov_ok, _ = prov.validate_completeness(manifest)
         switch_outputs.append({
             "case_id": case["case_id"],
@@ -652,9 +655,14 @@ def run_spst6(manifest):
 
     rollback_outputs = []
     for case in regression_cases:
-        output, prov, auth, schema_ok, errs = task_a_rollback.execute(
+        res = task_a_rollback.execute(
             case["case_id"], case["input"]
         )
+        output = res.extracted_output
+        prov = res.provenance
+        auth = res.authorization
+        schema_ok = res.schema_valid
+        errs = res.schema_errors
         prov_ok, _ = prov.validate_completeness(manifest)
         rollback_outputs.append({
             "case_id": case["case_id"],

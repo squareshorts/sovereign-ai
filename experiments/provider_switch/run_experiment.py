@@ -225,7 +225,12 @@ def main():
                 completed.add((item["case_id"], item["provider_blind_id"], item["replicate"]))
                 
     if args.dry_run:
-        print(f"Dry run constructed schedule of {len(schedule)} units.")
+        auth_units = sum(1 for s in schedule if s["stratum"] == "authorization_adversarial")
+        prov_executable = len(schedule) - auth_units
+        print(f"scheduled units = {len(schedule)}")
+        print(f"authorization units = {auth_units}")
+        print(f"provider-executable units = {prov_executable}")
+        print(f"real provider calls = 0")
         return
 
     from workflow.task import MedicationReconciliationTask

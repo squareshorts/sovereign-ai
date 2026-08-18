@@ -44,7 +44,10 @@ def main():
         for i, case in enumerate(cases):
             print(f"  Case {i+1} ({case['case_id']}):")
             try:
-                output, prov, auth, schema_ok, errs = task.execute(case['case_id'], case['input'])
+                res = task.execute(case['case_id'], case['input'])
+                output = res.extracted_output
+                schema_ok = res.schema_valid
+                errs = res.schema_errors
                 if output is not None:
                     print(f"    Success! Schema OK: {schema_ok}")
                 else:
