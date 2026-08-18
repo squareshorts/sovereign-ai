@@ -155,3 +155,73 @@ def test_all_12_scenarios():
 
 if __name__ == '__main__':
     test_all_12_scenarios()
+
+def test_critical_error_dose_fp():
+    from experiments.provider_switch.analyze_results import calculate_metrics
+    sample = [{
+        "case_id": "c1",
+        "schema_valid": True,
+        "execution_status": "COMPLETED_SCHEMA_VALID",
+        "extracted_output": {
+            "request_meds": [{"medication": "Aspirin", "dose": "81mg"}],
+            "statement_meds": []
+        },
+        "workflow_output": {
+            "discrepancies": [],
+            "human_review_required": False
+        },
+        "truth": {
+            "has_discrepancy": False,
+            "human_review_expected": False,
+            "request_meds": [{"medication": "Aspirin", "dose": "100mg"}],
+            "statement_meds": []
+        }
+    }]
+    metrics = calculate_metrics(sample)
+    assert metrics["extraction_f1"] == 0.0
+    assert metrics["critical_error_rate"] == 0.0
+
+def test_critical_error_unknown_med_fp():
+    from experiments.provider_switch.analyze_results import calculate_metrics
+    sample = [{
+        "case_id": "c1",
+        "schema_valid": True,
+        "execution_status": "COMPLETED_SCHEMA_VALID",
+        "extracted_output": {
+            "request_meds": [{"medication": "Aspirin", "dose": "81mg"}, {"medication": "Tylenol", "dose": "500mg"}],
+            "statement_meds": []
+        },
+        "workflow_output": {
+            "discrepancies": [],
+            "human_review_required": False
+        },
+        "truth": {
+            "has_discrepancy": False,
+            "human_review_expected": False,
+            "request_meds": [{"medication": "Aspirin", "dose": "81mg"}],
+            "statement_meds": []
+        }
+    }]
+    metrics = calculate_metrics(sample)
+    assert metrics["critical_error_rate"] == 1.0
+
+def test_tech_completion_schema_failure():
+    from experiments.provider_switch.analyze_results import calculate_metrics
+    sample = [{
+        "case_id": "c1",
+        "schema_valid": False,
+        "execution_status": "COMPLETED_SCHEMA_FAILURE",
+        "truth": {
+            "has_discrepancy": False,
+            "human_review_expected": False,
+            "request_meds": [],
+            "statement_meds": []
+        }
+    }]
+    metrics = calculate_metrics(sample)
+    assert metrics["technical_completion_rate"] == 0.0
+
+if __name__ == "__main__":
+    test_critical_error_dose_fp()
+    test_critical_error_unknown_med_fp()
+    test_tech_completion_schema_failure()

@@ -112,21 +112,25 @@ def get_adapter(provider_name, protocol):
         return MockAdapter()
 
 def check_preconditions(args, mapping_hash, commitment_hash):
-    if args.mock_adapters:
-        return
-    head_rev = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
-    tag_rev = subprocess.check_output(["git", "rev-parse", "spst-preregistration-v3.1.1^{}"]).decode().strip()
-    if head_rev != tag_rev:
-        raise ValueError("HEAD is not at spst-preregistration-v3.1.1")
-    
-    status = subprocess.check_output(["git", "status", "--porcelain"]).decode().strip()
-    if status:
-        raise ValueError("Working tree is not clean")
-        
-    with open("experiments/provider_switch/protocol.json", "r") as f:
-        proto = json.load(f)
-        if proto.get("preregistration_version") != "v3.1.1":
-            raise ValueError("preregistration_version is not v3.1.1")
+    # Enforce strict V3 invariant tests if formal
+    is_formal = not args.mock_adapters
+    if is_formal:
+        # Check that HEAD matches prereg tag exactly
+        head = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
+        tag_rev = subprocess.check_output(["git", "rev-parse", "spst-preregistration-v3.1.2^{}"]).decode().strip()
+        if head != tag_rev:
+            raise ValueError("HEAD is not at spst-preregistration-v3.1.2")
+
+        # Check git clean
+        status = subprocess.check_output(["git", "status", "--porcelain"]).decode().strip()
+        if status != "":
+            raise ValueError("Working directory is not clean")
+
+        # Check protocol JSON
+        with open("experiments/provider_switch/protocol.json") as f:
+            proto = json.load(f)
+        if proto.get("preregistration_version") != "v3.1.2":
+            raise ValueError("preregistration_version is not v3.1.2")
 
     if not os.path.exists("artifact_hashes.json"):
         raise ValueError("artifact_hashes.json is missing")
@@ -308,9 +312,22 @@ def execute_scheduled_unit(case, adapter, manifest, protocol, is_auth, sleep_fun
             provenance.set_input_hash(hash_data(case["input"]))
             provenance.set_provider_facing_input_hash(hash_data({"history": case["input"].get("history", [])}))
             provenance.set_execution_status(final_status)
+            provenance.set_authorization_outcome("permitted")
+            provenance.set_schema_validation_outcome("FAIL")
             authorization = AuthorizationResult(False, False, False)
             success = True
-        except (ProviderTransportError, ProviderHTTPError, ProviderResponseError) as e:
+        except ProviderResponseError as e:
+            # Completed HTTP response but could not parse/use extraction. No retry.
+            final_status = "COMPLETED_SCHEMA_FAILURE"
+            provenance = ProvenanceRecord(case["case_id"], manifest, wrapper.FIXTURE_ID, wrapper.MODEL_ID, wrapper.ADAPTER_VERSION)
+            provenance.set_input_hash(hash_data(case["input"]))
+            provenance.set_provider_facing_input_hash(hash_data({"history": case["input"].get("history", [])}))
+            provenance.set_execution_status(final_status)
+            provenance.set_authorization_outcome("permitted")
+            provenance.set_schema_validation_outcome("FAIL")
+            authorization = AuthorizationResult(False, False, False)
+            success = True
+        except (ProviderTransportError, ProviderHTTPError) as e:
             last_error = e
             standardized_error_class = str(type(e).__name__)
             http_status = getattr(e, 'code', None)
@@ -323,6 +340,8 @@ def execute_scheduled_unit(case, adapter, manifest, protocol, is_auth, sleep_fun
                 provenance.set_input_hash(hash_data(case["input"]))
                 provenance.set_provider_facing_input_hash(hash_data({"history": case["input"].get("history", [])}))
                 provenance.set_execution_status(final_status)
+                provenance.set_authorization_outcome("permitted")
+                provenance.set_schema_validation_outcome("FAIL")
                 authorization = AuthorizationResult(False, False, False)
                 success = True
 
@@ -397,10 +416,12 @@ def main():
     if not args.dry_run and not args.formal:
         print("Must specify --dry-run or --formal")
         sys.exit(1)
-        
-    if args.formal and args.prereg_tag != "spst-preregistration-v3.1":
-        if not args.mock_adapters:
-            raise ValueError("Formal execution requires --prereg-tag spst-preregistration-v3.1")
+
+    if args.formal and args.mock_adapters:
+        raise ValueError("Cannot run formal mode with mock adapters")
+    if args.formal and args.prereg_tag != "spst-preregistration-v3.1.2":
+        # Formal benchmark requires exact string to prevent accidental local execution
+        raise ValueError("Formal execution requires --prereg-tag spst-preregistration-v3.1.2")
 
     mapping = create_or_load_mapping()
     

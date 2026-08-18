@@ -1,7 +1,7 @@
-# SPST Preregistration (v3)
+# SPST Preregistration (v3.1.2)
 
 **Status:** FROZEN
-**Version:** v3
+**Version:** v3.1.2
 
 ## Version History
 - **v1**: Audit record of first preregistration attempt. Tag preserved permanently.

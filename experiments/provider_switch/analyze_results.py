@@ -32,6 +32,16 @@ def compute_extraction_f1_exact(pred_req, pred_stat, true_req, true_stat):
     
     return tp, fp, fn
 
+def has_critical_error(pred_req, pred_stat, true_req, true_stat):
+    def extract_name(m):
+        return str(m.get("medication", "")).strip().lower()
+        
+    p_names = set([extract_name(m) for m in pred_req] + [extract_name(m) for m in pred_stat])
+    t_names = set([extract_name(m) for m in true_req] + [extract_name(m) for m in true_stat])
+    
+    # Critical error if there is a predicted name that isn't in truth names
+    return len(p_names - t_names) > 0
+
 def calculate_metrics(sample):
     if not sample: return {}
     n = len(sample)
@@ -39,7 +49,7 @@ def calculate_metrics(sample):
     schema_valid = sum(1 for x in sample if x["schema_valid"])
     schema_valid_rate = schema_valid / n
     
-    tech_completed = sum(1 for x in sample if x["execution_status"] not in ["PROVIDER_CALL_FAILURE", "TRANSPORT_FAILURE_AFTER_RETRIES"])
+    tech_completed = sum(1 for x in sample if x["execution_status"] == "COMPLETED_SCHEMA_VALID")
     tech_completion_rate = tech_completed / n
     
     tp = fp = fn = tn = 0
@@ -70,7 +80,7 @@ def calculate_metrics(sample):
         ex_fp += e_fp
         ex_fn += e_fn
         
-        if e_fp > 0:
+        if has_critical_error(p_req, p_stat, t["request_meds"], t["statement_meds"]):
             crit_errs += 1
             
         w_out = x.get("workflow_output") or out

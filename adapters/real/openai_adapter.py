@@ -2,7 +2,7 @@ import os
 import json
 import urllib.request
 import urllib.error
-from adapters.base import BaseAdapter, ProviderHTTPError, ProviderTransportError
+from adapters.base import BaseAdapter, ProviderHTTPError, ProviderTransportError, ProviderRefusalError, ProviderResponseError
 class OpenAIAdapter(BaseAdapter):
     FIXTURE_ID = "openai_real"
     ADAPTER_VERSION = "1.0.0"
@@ -89,8 +89,14 @@ class OpenAIAdapter(BaseAdapter):
                 # Update actual model returned by API
                 if "model" in resp_json:
                     self.MODEL_ID = resp_json["model"]
-                return resp_json["choices"][0]["message"]["content"]
+                
+                message = resp_json["choices"][0]["message"]
+                if message.get("refusal"):
+                    raise ProviderRefusalError(message["refusal"])
+                if "content" not in message or message["content"] is None:
+                    raise ProviderResponseError("No content in response")
+                return message["content"]
         except urllib.error.HTTPError as e:
             raise ProviderHTTPError(e.code, e.read().decode('utf-8'))
-        except Exception as e:
+        except urllib.error.URLError as e:
             raise ProviderTransportError(str(e))

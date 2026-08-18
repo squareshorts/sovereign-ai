@@ -2,7 +2,7 @@ import os
 import json
 import urllib.request
 import urllib.error
-from adapters.base import BaseAdapter, ProviderHTTPError, ProviderTransportError
+from adapters.base import BaseAdapter, ProviderHTTPError, ProviderTransportError, ProviderResponseError
 class GoogleAdapter(BaseAdapter):
     FIXTURE_ID = "google_real"
     ADAPTER_VERSION = "1.0.0"
@@ -93,6 +93,4 @@ class GoogleAdapter(BaseAdapter):
         except urllib.error.HTTPError as e:
             raise ProviderHTTPError(e.code, e.read().decode('utf-8'))
         except urllib.error.URLError as e:
-            raise ProviderTransportError(str(e))
-        except Exception as e:
             raise ProviderTransportError(str(e))

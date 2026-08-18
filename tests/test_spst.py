@@ -1,3 +1,17 @@
+
+def test_adapter_no_blanket_exceptions(results):
+    with open("adapters/real/openai_adapter.py") as f: ok1 = "except Exception" not in f.read()
+    with open("adapters/real/anthropic_adapter.py") as f: ok2 = "except Exception" not in f.read()
+    with open("adapters/real/google_adapter.py") as f: ok3 = "except Exception" not in f.read()
+    results.check("adapter_no_blanket_exceptions", ok1 and ok2 and ok3)
+
+def test_provenance_validation_detects_missing_fields(results):
+    from workflow.task import ProvenanceRecord
+    import json
+    manifest = json.load(open("workflow_manifest.json"))
+    prov = ProvenanceRecord("c1", manifest, "fid", "mid", "v1")
+    ok, errs = prov.validate_completeness(manifest)
+    results.check("prov_validation_detects_missing_fields", not ok and any("schema_validation_outcome" in e for e in errs))
 """
 Automated Conformance Checks for the SPST reference implementation.
 
@@ -438,5 +452,8 @@ if __name__ == "__main__":
     test_authorization_negative_cases(results)
     test_harness_negative_logic(results)
 
+
+    test_adapter_no_blanket_exceptions(results)
+    test_provenance_validation_detects_missing_fields(results)
     all_passed = results.summary()
     sys.exit(0 if all_passed else 1)

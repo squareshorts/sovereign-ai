@@ -234,3 +234,28 @@ def test_success_auth_isolation():
     assert rec2.get('workflow_output') is None
     assert rec2['provider_api_call_count'] == 0
     assert rec2['attempt_count'] == 0
+
+def test_formal_tag_requirement():
+    import subprocess
+    try:
+        subprocess.check_output(["python", "experiments/provider_switch/run_experiment.py", "--formal", "--prereg-tag", "spst-preregistration-v3.1"], stderr=subprocess.STDOUT)
+        assert False, "Should have failed"
+    except subprocess.CalledProcessError as e:
+        assert "Formal execution requires --prereg-tag spst-preregistration-v3.1.2" in e.output.decode()
+
+def test_response_error_routing():
+    from adapters.base import ProviderResponseError
+    case, manifest, protocol = setup_case_and_manifest()
+    class ResponseErrorAdapter:
+        FIXTURE_ID = "mock"
+        MODEL_ID = "mock"
+        ADAPTER_VERSION = "1.0"
+        def __init__(self): self.call_count = 0
+        def infer(self, req):
+            self.call_count += 1
+            raise ProviderResponseError("Mock response error")
+    adapter = ResponseErrorAdapter()
+    pub_log, priv_log = execute_scheduled_unit(case, adapter, manifest, protocol, is_auth=False, sleep_func=lambda x: None)
+    assert pub_log["execution_status"] == "COMPLETED_SCHEMA_FAILURE"
+    assert pub_log["attempt_count"] == 1
+    assert pub_log["provider_api_call_count"] == 1
