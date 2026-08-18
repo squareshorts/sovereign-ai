@@ -241,7 +241,7 @@ def test_formal_tag_requirement():
         subprocess.check_output(["python", "experiments/provider_switch/run_experiment.py", "--formal", "--prereg-tag", "spst-preregistration-v3.1"], stderr=subprocess.STDOUT)
         assert False, "Should have failed"
     except subprocess.CalledProcessError as e:
-        assert "Formal execution requires --prereg-tag spst-preregistration-v3.1.2" in e.output.decode()
+        assert "Formal execution requires --prereg-tag spst-preregistration-v3.1.3" in e.output.decode()
 
 def test_response_error_routing():
     from adapters.base import ProviderResponseError

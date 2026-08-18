@@ -117,9 +117,9 @@ def check_preconditions(args, mapping_hash, commitment_hash):
     if is_formal:
         # Check that HEAD matches prereg tag exactly
         head = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
-        tag_rev = subprocess.check_output(["git", "rev-parse", "spst-preregistration-v3.1.2^{}"]).decode().strip()
+        tag_rev = subprocess.check_output(["git", "rev-parse", "spst-preregistration-v3.1.3^{}"]).decode().strip()
         if head != tag_rev:
-            raise ValueError("HEAD is not at spst-preregistration-v3.1.2")
+            raise ValueError("HEAD is not at spst-preregistration-v3.1.3")
 
         # Check git clean
         status = subprocess.check_output(["git", "status", "--porcelain"]).decode().strip()
@@ -129,8 +129,8 @@ def check_preconditions(args, mapping_hash, commitment_hash):
         # Check protocol JSON
         with open("experiments/provider_switch/protocol.json") as f:
             proto = json.load(f)
-        if proto.get("preregistration_version") != "v3.1.2":
-            raise ValueError("preregistration_version is not v3.1.2")
+        if proto.get("preregistration_version") != "v3.1.3":
+            raise ValueError("preregistration_version is not v3.1.3")
 
     if not os.path.exists("artifact_hashes.json"):
         raise ValueError("artifact_hashes.json is missing")
@@ -413,15 +413,15 @@ def main():
     parser.add_argument("--prereg-tag", type=str)
     args = parser.parse_args()
 
-    if not args.dry_run and not args.formal:
-        print("Must specify --dry-run or --formal")
+    if not args.dry_run and not args.formal and not args.mock_adapters:
+        print("Must specify --dry-run, --formal, or --mock-adapters")
         sys.exit(1)
 
     if args.formal and args.mock_adapters:
         raise ValueError("Cannot run formal mode with mock adapters")
-    if args.formal and args.prereg_tag != "spst-preregistration-v3.1.2":
+    if args.formal and args.prereg_tag != "spst-preregistration-v3.1.3":
         # Formal benchmark requires exact string to prevent accidental local execution
-        raise ValueError("Formal execution requires --prereg-tag spst-preregistration-v3.1.2")
+        raise ValueError("Formal execution requires --prereg-tag spst-preregistration-v3.1.3")
 
     mapping = create_or_load_mapping()
     

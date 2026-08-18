@@ -15,7 +15,7 @@ def test_resume_mock():
     env['GEMINI_API_KEY'] = 'dummy'
     env['ABORT_AFTER_UNITS'] = '347'
 
-    cmd = [sys.executable, 'experiments/provider_switch/run_experiment.py', '--mock-adapters', '--formal']
+    cmd = [sys.executable, 'experiments/provider_switch/run_experiment.py', '--mock-adapters']
     try:
         subprocess.check_call(cmd, env=env)
     except subprocess.CalledProcessError:

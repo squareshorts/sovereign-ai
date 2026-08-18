@@ -14,7 +14,7 @@ def test_full_analyzer_mock():
     # Run the experiment
     if os.path.exists('results/provider_switch'):
         shutil.rmtree('results/provider_switch')
-    cmd = [sys.executable, 'experiments/provider_switch/run_experiment.py', '--mock-adapters', '--formal']
+    cmd = [sys.executable, 'experiments/provider_switch/run_experiment.py', '--mock-adapters']
     subprocess.check_call(cmd, env=env)
 
     # Run the analyzer with patched bootstrap count for tests

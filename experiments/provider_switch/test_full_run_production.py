@@ -14,7 +14,7 @@ def test_full_production_mock():
     env['ANTHROPIC_API_KEY'] = 'dummy'
     env['GEMINI_API_KEY'] = 'dummy'
 
-    cmd = [sys.executable, 'experiments/provider_switch/run_experiment.py', '--mock-adapters', '--formal']
+    cmd = [sys.executable, 'experiments/provider_switch/run_experiment.py', '--mock-adapters']
     subprocess.check_call(cmd, env=env)
 
     # Verify 2160 lines in raw_outputs.jsonl

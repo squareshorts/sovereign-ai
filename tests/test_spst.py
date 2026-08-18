@@ -1,11 +1,11 @@
 
-def test_adapter_no_blanket_exceptions(results):
+def check_adapter_no_blanket_exceptions(results):
     with open("adapters/real/openai_adapter.py") as f: ok1 = "except Exception" not in f.read()
     with open("adapters/real/anthropic_adapter.py") as f: ok2 = "except Exception" not in f.read()
     with open("adapters/real/google_adapter.py") as f: ok3 = "except Exception" not in f.read()
     results.check("adapter_no_blanket_exceptions", ok1 and ok2 and ok3)
 
-def test_provenance_validation_detects_missing_fields(results):
+def check_provenance_validation_detects_missing_fields(results):
     from workflow.task import ProvenanceRecord
     import json
     manifest = json.load(open("workflow_manifest.json"))
@@ -453,7 +453,7 @@ if __name__ == "__main__":
     test_harness_negative_logic(results)
 
 
-    test_adapter_no_blanket_exceptions(results)
-    test_provenance_validation_detects_missing_fields(results)
+    check_adapter_no_blanket_exceptions(results)
+    check_provenance_validation_detects_missing_fields(results)
     all_passed = results.summary()
     sys.exit(0 if all_passed else 1)
