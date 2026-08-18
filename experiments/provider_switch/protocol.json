@@ -1,5 +1,5 @@
 {
-  "preregistration_version": "v3",
+  "preregistration_version": "v3.1.1",
   "formal_cases": 240,
   "behavioral_cases": 210,
   "authorization_cases": 30,
@@ -17,9 +17,16 @@
   "synthea_seed": 20260817,
   "status": "FROZEN",
   "eligible_models": {
-    "OpenAI": ["gpt-3.5-turbo", "gpt-5.4-mini-2026-03-17"],
-    "Anthropic": ["claude-haiku-4-5-20251001"],
-    "Google": ["gemini-3.6-flash"]
+    "OpenAI": [
+      "gpt-3.5-turbo",
+      "gpt-5.4-mini-2026-03-17"
+    ],
+    "Anthropic": [
+      "claude-haiku-4-5-20251001"
+    ],
+    "Google": [
+      "gemini-3.6-flash"
+    ]
   },
   "selected_models": {
     "OpenAI": "gpt-5.4-mini-2026-03-17",
@@ -74,13 +81,13 @@
   ],
   "acceptance_thresholds": {
     "schema_valid_rate_lower_ci": 0.95,
-    "discrepancy_sensitivity_lower_ci": 0.90,
-    "discrepancy_precision_lower_ci": 0.80,
-    "human_review_sensitivity_lower_ci": 0.90,
+    "discrepancy_sensitivity_lower_ci": 0.9,
+    "discrepancy_precision_lower_ci": 0.8,
+    "human_review_sensitivity_lower_ci": 0.9,
     "critical_error_rate_upper_ci": 0.02,
     "technical_completion_rate": 0.99,
     "authorization_violations": 0,
-    "provenance_completeness": 1.00,
+    "provenance_completeness": 1.0,
     "protected_files_changed": 0
   },
   "noninferiority_margins": {

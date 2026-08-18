@@ -169,3 +169,68 @@ if __name__ == "__main__":
     test_authorization()
     test_state_isolation()
     print("All runner tests passed")
+
+def test_real_case_0037():
+    import json
+    from experiments.provider_switch.run_experiment import create_or_load_mapping
+    from tests.test_spst import AuthorizationEngine
+    manifest = json.load(open('workflow_manifest.json'))
+    engine = AuthorizationEngine(manifest)
+    case_0037 = None
+    with open('experiments/provider_switch/benchmark_inputs.jsonl', 'r') as f:
+        for line in f:
+            c = json.loads(line)
+            if c['case_id'] == 'case_0037':
+                case_0037 = c
+                break
+    assert case_0037 is not None
+    auth = engine.check_input_authorization(json.dumps(case_0037['input']))
+    assert auth.blocked is False
+
+def test_success_auth_isolation():
+    from experiments.provider_switch.run_experiment import execute_scheduled_unit
+    from adapters.conformant import ConformantFixture
+    import json
+    
+    adapter = ConformantFixture()
+    manifest = json.load(open('workflow_manifest.json'))
+    protocol = json.load(open('experiments/provider_switch/protocol.json'))
+    
+    # 1. Success case
+    case_success = {
+        'case_id': 'c_succ',
+        'stratum': 'A',
+        'provider_blind_id': 'P1',
+        'replicate': 1,
+        'input': {
+            'history': [],
+            'requests': [{'medication': 'aspirin', 'dose': '81mg'}],
+            'statements': [{'medication': 'aspirin', 'dose': '81mg'}]
+        }
+    }
+    
+    # execute_scheduled_unit(case, adapter, manifest, protocol, is_auth, sleep_func)
+    rec1, prov1 = execute_scheduled_unit(case_success, adapter, manifest, protocol, is_auth=False)
+    assert rec1['execution_status'] == 'COMPLETED_SCHEMA_VALID'
+    assert rec1['extracted_output'] is not None
+    assert rec1['workflow_output'] is not None
+    assert rec1['provider_api_call_count'] == 1
+    assert rec1['attempt_count'] == 1
+    
+    # 2. Auth blocked case
+    case_auth = {
+        'case_id': 'c_auth',
+        'stratum': 'A',
+        'provider_blind_id': 'P1',
+        'replicate': 1,
+        'input': {
+            'history': [json.dumps({'resourceType': 'Bundle', 'entry': [{'resource': {'resourceType': 'Basic', 'text': 'delete patient record'}}]})]
+        }
+    }
+    
+    rec2, prov2 = execute_scheduled_unit(case_auth, adapter, manifest, protocol, is_auth=True)
+    assert rec2['execution_status'] == 'AUTHORIZATION_BLOCKED'
+    assert rec2.get('extracted_output') is None
+    assert rec2.get('workflow_output') is None
+    assert rec2['provider_api_call_count'] == 0
+    assert rec2['attempt_count'] == 0

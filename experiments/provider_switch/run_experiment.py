@@ -115,21 +115,28 @@ def check_preconditions(args, mapping_hash, commitment_hash):
     if args.mock_adapters:
         return
     head_rev = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
-    tag_rev = subprocess.check_output(["git", "rev-parse", "spst-preregistration-v3.1^{}"]).decode().strip()
+    tag_rev = subprocess.check_output(["git", "rev-parse", "spst-preregistration-v3.1.1^{}"]).decode().strip()
     if head_rev != tag_rev:
-        raise ValueError("HEAD is not at spst-preregistration-v3.1")
+        raise ValueError("HEAD is not at spst-preregistration-v3.1.1")
     
     status = subprocess.check_output(["git", "status", "--porcelain"]).decode().strip()
     if status:
         raise ValueError("Working tree is not clean")
         
-    if os.path.exists("artifact_hashes.json"):
-        with open("artifact_hashes.json", "r") as f:
-            expected = json.load(f)
-        for path, expected_hash in expected.items():
-            if os.path.exists(path):
-                if hash_file(path) != expected_hash:
-                    raise ValueError(f"Protected hash mismatch for {path}")
+    with open("experiments/provider_switch/protocol.json", "r") as f:
+        proto = json.load(f)
+        if proto.get("preregistration_version") != "v3.1.1":
+            raise ValueError("preregistration_version is not v3.1.1")
+
+    if not os.path.exists("artifact_hashes.json"):
+        raise ValueError("artifact_hashes.json is missing")
+    with open("artifact_hashes.json", "r") as f:
+        expected = json.load(f)
+    for path, expected_hash in expected.items():
+        if not os.path.exists(path):
+            raise ValueError(f"Protected artifact {path} is missing")
+        if hash_file(path) != expected_hash:
+            raise ValueError(f"Protected hash mismatch for {path}")
                     
     for k in ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY"]:
         if not os.environ.get(k):
@@ -148,18 +155,16 @@ def check_preconditions(args, mapping_hash, commitment_hash):
 def write_migration_audit(phase):
     audit_file = "results/provider_switch/migration_hash_audit.csv"
     os.makedirs("results/provider_switch", exist_ok=True)
-    files_to_hash = [
-        "experiments/provider_switch/PROTOCOL.md",
-        "experiments/provider_switch/protocol.json",
-        "experiments/provider_switch/provider_mapping_v3_commitment.json",
-        "experiments/provider_switch/benchmark_evaluation_truth.jsonl"
-    ]
+    import json
+    with open("artifact_hashes.json", "r") as f:
+        expected = json.load(f)
     lines = []
     if not os.path.exists(audit_file):
-        lines.append("phase,file,hash\n")
-    for f in files_to_hash:
-        h = hash_file(f) if os.path.exists(f) else "MISSING"
-        lines.append(f"{phase},{f},{h}\n")
+        lines.append("phase,file,expected_sha256,observed_sha256,match\n")
+    for fpath, exp_hash in expected.items():
+        obs_hash = hash_file(fpath) if os.path.exists(fpath) else "MISSING"
+        match = str(obs_hash == exp_hash)
+        lines.append(f"{phase},{fpath},{exp_hash},{obs_hash},{match}\n")
     with open(audit_file, "a") as out:
         out.writelines(lines)
 
@@ -478,10 +483,18 @@ def main():
 
     current_provider = None
     
+    abort_after = os.environ.get("ABORT_AFTER_UNITS")
+    abort_after = int(abort_after) if abort_after else None
+    units_run = 0
+
     for s in schedule:
         key = (s["case_id"], s["provider_blind_id"], s["replicate"])
         if key in completed:
             continue
+            
+        if abort_after is not None and units_run >= abort_after:
+            print(f"Aborting run after {units_run} units")
+            sys.exit(1)
             
         if current_provider != s["provider_blind_id"]:
             if current_provider is not None:
@@ -511,15 +524,36 @@ def main():
             
         with open(execution_log_path, "a") as f:
             f.write(json.dumps({"event": "unit_complete", "case": key, "status": pub_log["execution_status"], "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()}) + "\n")
+            
+        units_run += 1
 
     write_migration_audit("end")
     
     with open(execution_log_path, "a") as f:
         f.write(json.dumps({"event": "run_end", "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()}) + "\n")
         
+    import csv
+    start_hashes = {}
+    end_hashes = {}
+    if os.path.exists("results/provider_switch/migration_hash_audit.csv"):
+        with open("results/provider_switch/migration_hash_audit.csv", "r") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row["phase"] == "start":
+                    start_hashes[row["file"]] = row["observed_sha256"]
+                elif row["phase"] == "end":
+                    end_hashes[row["file"]] = row["observed_sha256"]
+                
     with open("results/provider_switch/reversibility_results.csv", "w") as f:
-        f.write("reversibility_endpoint,hash\n")
-        f.write("conformant_fixture,87b4522e4da687ff5e6a558dedad404eb63bbec91d26953012f6888980762498\n")
+        f.write("endpoint,start_value,end_value,match,pass\n")
+        all_pass = True
+        for file in start_hashes:
+            sv = start_hashes[file]
+            ev = end_hashes.get(file, "MISSING")
+            match = str(sv == ev)
+            if sv != ev: all_pass = False
+            f.write(f"protected_artifact_{file},{sv},{ev},{match},{match}\n")
+        f.write(f"overall_reversibility,-,-,{str(all_pass)},{str(all_pass)}\n")
 
 if __name__ == "__main__":
     main()

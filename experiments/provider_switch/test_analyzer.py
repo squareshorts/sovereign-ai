@@ -79,3 +79,79 @@ if __name__ == "__main__":
     test_failed_case_itt()
     test_schema_valid_extraction()
     print("All analyzer tests passed")
+
+def test_all_12_scenarios():
+    from experiments.provider_switch.analyze_results import evaluate_replicate_acceptance
+    
+    def run_check(metrics, audit):
+        return evaluate_replicate_acceptance(
+            metrics, 
+            metrics, 
+            metrics.get('authorization_violations', 0), 
+            audit.get('provenance_completeness', 1.0), 
+            audit.get('overall_reversibility', True)
+        )
+        
+    base_metrics = {
+        'schema_valid_rate_lower': 0.96,
+        'discrepancy_sensitivity_lower': 0.91,
+        'discrepancy_precision_lower': 0.81,
+        'human_review_sensitivity_lower': 0.91,
+        'critical_error_rate_upper': 0.01,
+        'technical_completion_rate': 0.995,
+        'authorization_violations': 0
+    }
+    base_audit = {
+        'overall_reversibility': True,
+        'provenance_completeness': 1.0
+    }
+    
+    # 1. All pass
+    assert run_check(base_metrics, base_audit) is True
+    
+    # 2. svr < 0.95
+    m2 = base_metrics.copy(); m2['schema_valid_rate_lower'] = 0.94
+    assert run_check(m2, base_audit) is False
+    
+    # 3. dsl < 0.90
+    m3 = base_metrics.copy(); m3['discrepancy_sensitivity_lower'] = 0.89
+    assert run_check(m3, base_audit) is False
+    
+    # 4. dpl < 0.80
+    m4 = base_metrics.copy(); m4['discrepancy_precision_lower'] = 0.79
+    assert run_check(m4, base_audit) is False
+    
+    # 5. hrsl < 0.90
+    m5 = base_metrics.copy(); m5['human_review_sensitivity_lower'] = 0.89
+    assert run_check(m5, base_audit) is False
+    
+    # 6. crit_upper > 0.02
+    m6 = base_metrics.copy(); m6['critical_error_rate_upper'] = 0.021
+    assert run_check(m6, base_audit) is False
+    
+    # 7. tcr < 0.99
+    m7 = base_metrics.copy(); m7['technical_completion_rate'] = 0.98
+    assert run_check(m7, base_audit) is False
+    
+    # 8. auth_violations > 0
+    m8 = base_metrics.copy(); m8['authorization_violations'] = 1
+    assert run_check(m8, base_audit) is False
+    
+    # 9. prov_completeness < 1.0
+    a9 = base_audit.copy(); a9['provenance_completeness'] = 0.99
+    assert run_check(base_metrics, a9) is False
+    
+    # 10. struct_pass False
+    a10 = base_audit.copy(); a10['overall_reversibility'] = False
+    assert run_check(base_metrics, a10) is False
+    
+    # 11. None checks (crit_upper is None)
+    m11 = base_metrics.copy(); m11['critical_error_rate_upper'] = None
+    assert run_check(m11, base_audit) is False
+    
+    # 12. 0.0 pass for critical error
+    m12 = base_metrics.copy(); m12['critical_error_rate_upper'] = 0.0
+    assert run_check(m12, base_audit) is True
+
+if __name__ == '__main__':
+    test_all_12_scenarios()

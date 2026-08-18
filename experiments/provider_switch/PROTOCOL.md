@@ -84,3 +84,7 @@
 - Commit: `0185c09ea9d10a822c6f5f3ef9bdcbcbe960c813`
 - Seed: `20260817`
 - Java: `17.0.12+7`
+
+## Implementation Audit v3.1.1
+
+**Note**: Version 3.1.1 is an implementation-only prelaunch correction after v3.1 source review. No scientific constants, evaluation cases, or thresholds were changed.

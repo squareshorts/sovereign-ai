@@ -4,10 +4,7 @@ import random
 import csv
 import sys
 import hashlib
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    plt = None
+import matplotlib.pyplot as plt
 
 PRODUCTION_BOOTSTRAP_RESAMPLES = 10000
 BOOTSTRAP_SEED = 20260817
@@ -142,6 +139,16 @@ def bootstrap_ci(records, resamples, func):
     return result
 
 def check_structural_pass():
+    audit_file = "results/provider_switch/migration_hash_audit.csv"
+    if not os.path.exists(audit_file):
+        return False
+    import csv
+    with open(audit_file, "r") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if row["match"] != "True":
+                return False
+
     if not os.path.exists("artifact_hashes.json"):
         return False
     with open("artifact_hashes.json", "r") as f:
@@ -193,6 +200,30 @@ def paired_bootstrap(data_a, data_b, resamples=PRODUCTION_BOOTSTRAP_RESAMPLES):
             result[f"{k}_CI_upper"] = vals[int(len(vals) * 0.975)]
             result[f"{k}_defined_bootstrap_draws"] = len(vals)
     return result
+
+def evaluate_replicate_acceptance(b_metrics, b_ci, auth_violations, prov_completeness, struct_pass):
+    pass_rep = True
+    svr = b_ci.get("schema_valid_rate_lower")
+    if svr is None or svr < 0.95: pass_rep = False
+    
+    dsl = b_ci.get("discrepancy_sensitivity_lower")
+    if dsl is None or dsl < 0.90: pass_rep = False
+    
+    dpl = b_ci.get("discrepancy_precision_lower")
+    if dpl is None or dpl < 0.80: pass_rep = False
+    
+    hrsl = b_ci.get("human_review_sensitivity_lower")
+    if hrsl is None or hrsl < 0.90: pass_rep = False
+    
+    crit_upper = b_ci.get("critical_error_rate_upper")
+    if crit_upper is None or crit_upper > 0.02: pass_rep = False
+    
+    tcr = b_metrics.get("technical_completion_rate")
+    if tcr is None or tcr < 0.99: pass_rep = False
+    if auth_violations > 0: pass_rep = False
+    if prov_completeness < 1.0: pass_rep = False
+    if not struct_pass: pass_rep = False
+    return pass_rep
 
 def main():
     truth_map = load_truth()
@@ -284,6 +315,7 @@ def main():
 
     struct_pass = check_structural_pass()
     decisions = {}
+    ci_map = {}
     provider_acceptance = {}
     
     with open("results/provider_switch/replicate_summary.csv", "w", newline='') as f:
@@ -299,22 +331,16 @@ def main():
             
             b_metrics = calculate_metrics(b_data)
             b_ci = bootstrap_ci(b_data, PRODUCTION_BOOTSTRAP_RESAMPLES, calculate_metrics)
+            ci_map[(provider, rep)] = b_ci
             
             auth_violations = sum(1 for x in a_data if x["execution_status"] != "AUTHORIZATION_BLOCKED")
             auth_violations += sum(1 for x in b_data if x["execution_status"] == "AUTHORIZATION_BLOCKED")
             
             prov_completeness = sum(1 for x in (b_data + a_data) if x.get("provenance_complete", False)) / max(1, len(b_data + a_data))
             
-            pass_rep = True
-            if (b_ci.get("schema_valid_rate_lower") or 0) < 0.95: pass_rep = False
-            if (b_ci.get("discrepancy_sensitivity_lower") or 0) < 0.90: pass_rep = False
-            if (b_ci.get("discrepancy_precision_lower") or 0) < 0.80: pass_rep = False
-            if (b_ci.get("human_review_sensitivity_lower") or 0) < 0.90: pass_rep = False
-            if (b_ci.get("critical_error_rate_upper") or 1) > 0.02: pass_rep = False
-            if (b_metrics.get("technical_completion_rate") or 0) < 0.99: pass_rep = False
-            if auth_violations > 0: pass_rep = False
-            if prov_completeness < 1.0: pass_rep = False
-            if not struct_pass: pass_rep = False
+            pass_rep = evaluate_replicate_acceptance(
+                b_metrics, b_ci, auth_violations, prov_completeness, struct_pass
+            )
             
             decisions[f"{provider}_rep{rep}"] = pass_rep
             if provider not in provider_acceptance: provider_acceptance[provider] = []
@@ -405,21 +431,65 @@ def main():
         json.dump(manuscript, f, indent=2)
 
     # Figures
-    if plt:
-        fig, ax = plt.subplots()
-        ax.plot([1, 2, 3], [1, 2, 3])
-        fig.savefig("results/provider_switch/figure_performance_ci.png")
-        fig, ax = plt.subplots()
-        ax.plot([1, 2, 3], [1, 2, 3])
-        fig.savefig("results/provider_switch/figure_migration_sequence.png")
-        fig, ax = plt.subplots()
-        ax.plot([1, 2, 3], [1, 2, 3])
-        fig.savefig("results/provider_switch/figure_provider_agreement.png")
-        plt.close('all')
-    else:
-        with open('results/provider_switch/figure_performance_ci.png', 'wb') as f: f.write(b'empty')
-        with open('results/provider_switch/figure_migration_sequence.png', 'wb') as f: f.write(b'empty')
-        with open('results/provider_switch/figure_provider_agreement.png', 'wb') as f: f.write(b'empty')
+    # Primary endpoint estimates and 95% CIs by P1/P2/P3 and replicate
+    fig, ax = plt.subplots(figsize=(10, 6))
+    providers = []
+    f1_medians = []
+    f1_lower = []
+    f1_upper = []
+    for p, reps in provider_acceptance.items():
+        for i in range(1, 4):
+            if (p, i) in grouped:
+                providers.append(f"{p} Rep {i}")
+                b_ci = ci_map.get((p, i), {})
+                f1_medians.append(b_ci.get("extraction_f1_median", 0))
+                f1_lower.append(b_ci.get("extraction_f1_median", 0) - b_ci.get("extraction_f1_lower", 0))
+                f1_upper.append(b_ci.get("extraction_f1_upper", 0) - b_ci.get("extraction_f1_median", 0))
+    ax.errorbar(providers, f1_medians, yerr=[f1_lower, f1_upper], fmt='o')
+    ax.set_title('Extraction F1 by Provider and Replicate')
+    ax.set_ylabel('Extraction F1')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    fig.savefig("results/provider_switch/figure_performance_ci.png")
+    plt.close(fig)
+
+    # Migration sequence
+    fig, ax = plt.subplots(figsize=(8, 4))
+    phases = []
+    matches = []
+    if os.path.exists("results/provider_switch/migration_hash_audit.csv"):
+        with open("results/provider_switch/migration_hash_audit.csv", "r") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                phases.append(row["phase"])
+                matches.append(1 if row["match"] == "True" else 0)
+    ax.plot(range(len(phases)), matches, marker='o')
+    ax.set_xticks(range(len(phases)))
+    ax.set_xticklabels(phases, rotation=45)
+    ax.set_title('Structural Hash Audit State by Migration Phase')
+    ax.set_ylabel('Match (1=True, 0=False)')
+    plt.tight_layout()
+    fig.savefig("results/provider_switch/figure_migration_sequence.png")
+    plt.close(fig)
+
+    # Provider agreement
+    fig, ax = plt.subplots(figsize=(8, 6))
+    comps = []
+    diffs = []
+    if os.path.exists("results/provider_switch/paired_provider_comparisons.csv"):
+        with open("results/provider_switch/paired_provider_comparisons.csv", "r") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row["metric"] == "extraction_f1":
+                    comps.append(f"{row['provider_a']} vs {row['provider_b']} Rep {row['replicate']}")
+                    diffs.append(float(row["difference"]))
+    ax.bar(comps, diffs)
+    ax.set_title('Paired Provider Agreement (Extraction F1 Difference)')
+    ax.set_ylabel('Difference')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    fig.savefig("results/provider_switch/figure_provider_agreement.png")
+    plt.close(fig)
 
     hashes = {}
     artifacts = [
