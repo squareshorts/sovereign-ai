@@ -1,0 +1,1 @@
+Cue-absent restoration test on Qwen2.5-1.5B-Instruct. The self-reference direction is defined against external-recursive, history, and consciousness-semantic controls. The key comparison is recovery after a later ablation when no self-reference text is present in the active context.
