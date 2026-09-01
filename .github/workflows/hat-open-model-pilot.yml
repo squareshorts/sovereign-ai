@@ -1,6 +1,9 @@
 name: HAT open-model pilot
 
 on:
+  push:
+    branches:
+      - hat-open-model-pilot
   workflow_dispatch:
 
 jobs:
@@ -9,8 +12,6 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: hat-open-model-pilot
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
