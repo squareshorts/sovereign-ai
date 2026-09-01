@@ -1,0 +1,32 @@
+name: HAT restoration test
+
+on:
+  push:
+    branches:
+      - hat-restoration-test
+  workflow_dispatch:
+
+jobs:
+  restoration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install transformers accelerate pandas numpy matplotlib sentencepiece
+      - name: Run cue-absent restoration test
+        env:
+          HF_HOME: ${{ runner.temp }}/hf
+        run: |
+          python hat_open_model_pilot/run_restoration_test.py --model Qwen/Qwen2.5-1.5B-Instruct --outdir hat_restoration_results
+      - name: Upload restoration results
+        uses: actions/upload-artifact@v4
+        with:
+          name: hat-restoration-results
+          path: hat_restoration_results
