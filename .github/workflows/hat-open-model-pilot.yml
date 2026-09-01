@@ -24,9 +24,9 @@ jobs:
         env:
           HF_HOME: ${{ runner.temp }}/hf
         run: |
-          python hat_open_model_pilot/run_open_model_pilot_v2.py --model Qwen/Qwen2.5-0.5B-Instruct --trials 4 --outdir hat_open_model_results
+          python hat_open_model_pilot/run_open_model_pilot_v2.py --model Qwen/Qwen2.5-1.5B-Instruct --trials 4 --outdir hat_open_model_results
       - name: Upload results
         uses: actions/upload-artifact@v4
         with:
-          name: hat-open-model-results
+          name: hat-open-model-results-1p5b
           path: hat_open_model_results
