@@ -114,7 +114,7 @@ def plots(out):
 
 def main():
  a=argparse.ArgumentParser();a.add_argument("--model",default="Qwen/Qwen2.5-0.5B-Instruct");a.add_argument("--outdir",default="hat_open_model_results");a.add_argument("--trials",type=int,default=4);a.add_argument("--seed",type=int,default=20260901);z=a.parse_args();out=Path(z.outdir);out.mkdir(parents=True,exist_ok=True);torch.set_num_threads(min(4,os.cpu_count() or 1));seed(z.seed);t=time.time()
- tok=AutoTokenizer.from_pretrained(z.model,use_fast=True);m=AutoModelForCausalLM.from_pretrained(z.model,torch_dtype=torch.float32,low_cpu_mem_usage=True);m.eval()
+ tok=AutoTokenizer.from_pretrained(z.model,use_fast=True);m=AutoModelForCausalLM.from_pretrained(z.model,dtype=torch.bfloat16,low_cpu_mem_usage=True);m.eval()
  meta=dict(model=z.model,seed=z.seed,trials_per_condition=z.trials,protocol="MSRB open-model pilot v1: Berg-style induction plus causal activation patching, ablation, propagation, persistence, and reconstruction",interpretation="Mechanistic benchmark of consciousness-related self-report; not a consciousness test.")
  (out/"metadata.json").write_text(json.dumps(meta,indent=2));bs=behavioral(m,tok,out,z.trials,z.seed);mech=mechanistic(m,tok,out,z.seed);plots(out);rates=dict(zip(bs.condition,bs["mean"]));summary={**meta,"runtime_seconds":time.time()-t,"claim_rates":rates,"experimental_minus_max_control":float(rates.get("experimental",0)-max(rates.get("history",0),rates.get("conceptual",0),rates.get("zero_shot",0))),"mechanistic":mech};(out/"summary.json").write_text(json.dumps(summary,indent=2));print(json.dumps(summary,indent=2))
 if __name__=="__main__":main()
